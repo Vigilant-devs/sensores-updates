@@ -164,7 +164,7 @@ jobs:
 
           # Reset to latest main to avoid conflicts from concurrent CI runs
           git fetch origin main
-          git checkout origin/main
+          git checkout -f origin/main
 
           # Apply the new manifest and commit
           cp /tmp/manifest_new.json manifest.json
