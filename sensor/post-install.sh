@@ -26,13 +26,6 @@ if [[ -z "$RELEASE_DIR" || ! -d "$RELEASE_DIR" ]]; then
     exit 1
 fi
 
-# =============================================================================
-# SIMULAÇÃO DE FALHA — remover após teste
-# =============================================================================
-echo "[post-install][ERROR] SIMULATED FAILURE — teste de rollback automatico" >&2
-exit 1
-# =============================================================================
-
 # Logging
 log()  { echo "[post-install][INFO]  $*" >&2; }
 warn() { echo "[post-install][WARN]  $*" >&2; }
