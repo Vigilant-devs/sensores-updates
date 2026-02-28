@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "released_at": "1970-01-01T00:00:00Z",
+  "download_url": "",
+  "sha256": "",
+  "gpg_sig_url": "",
+  "min_supported_version": "1.0.0",
+  "rollback_safe": true,
+  "changelog": "Initial placeholder — will be updated on first release"
+}
