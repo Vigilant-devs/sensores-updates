@@ -11,11 +11,18 @@ RELEASE_DIR="${1:-}"
 # Atualizar config do rsyslog se incluida no pacote
 RSYSLOG_SRC="${RELEASE_DIR}/rsyslog-sensor.conf"
 RSYSLOG_DST="/etc/rsyslog.d/50-vigilant-updater.conf"
+LOG_SERVER_IP_FILE="/vigilant/scripts/log_server_ip"
 
 if [[ -f "$RSYSLOG_SRC" ]]; then
-    cp "$RSYSLOG_SRC" "$RSYSLOG_DST"
+    if [[ -f "$LOG_SERVER_IP_FILE" ]]; then
+        LOG_SERVER_IP=$(cat "$LOG_SERVER_IP_FILE")
+        sed "s/__LOG_SERVER_IP__/${LOG_SERVER_IP}/g" "$RSYSLOG_SRC" > "$RSYSLOG_DST"
+        echo "[custom-deploy] rsyslog config atualizado com IP: ${LOG_SERVER_IP}"
+    else
+        cp "$RSYSLOG_SRC" "$RSYSLOG_DST"
+        echo "[custom-deploy] rsyslog config copiado (log_server_ip nao encontrado)"
+    fi
     systemctl restart rsyslog 2>/dev/null || true
-    echo "[custom-deploy] rsyslog config atualizado: ${RSYSLOG_DST}"
 fi
 
 # Instalar e executar hook pos-atualizacao
