@@ -27,8 +27,8 @@ TOKEN_FILE="${UPDATER_DIR}/.gh-token"
 # Organização GitHub: Vigilant-devs
 MANIFEST_URL="https://raw.githubusercontent.com/Vigilant-devs/sensores-updates/main/manifest.json"
 
-# Status reporting endpoint
-STATUS_URL="http://177.190.148.68:80/api/sensor/update-status"
+# Status reporting endpoint (optional — leave empty to disable HTTP reporting)
+STATUS_URL=""
 
 # Services to restart and health-check after update
 SERVICES=("snort" "dionaea" "cowrie-ssh" "cowrie-telnet")
