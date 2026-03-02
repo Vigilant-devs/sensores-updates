@@ -266,10 +266,12 @@
         {
           "id": "organize",
           "options": {
+            "excludeByName": { "Time": true },
             "renameByName": {
               "client": "Cliente",
               "sensor": "Sensor",
-              "Value": "Eventos"
+              "Value": "Eventos",
+              "Value #A": "Eventos"
             }
           }
         }
@@ -297,10 +299,12 @@
         {
           "id": "organize",
           "options": {
+            "excludeByName": { "Time": true },
             "renameByName": {
               "client": "Cliente",
               "sensor": "Sensor",
-              "Value": "Eventos (24h)"
+              "Value": "Eventos (24h)",
+              "Value #A": "Eventos (24h)"
             }
           }
         }
@@ -352,11 +356,13 @@
         {
           "id": "organize",
           "options": {
+            "excludeByName": { "Time": true },
             "renameByName": {
               "client": "Cliente",
               "sensor": "Sensor",
               "version_to": "Versao",
-              "Value": "Eventos (30m)"
+              "Value": "Eventos (30m)",
+              "Value #A": "Eventos (30m)"
             }
           }
         }
