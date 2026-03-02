@@ -269,11 +269,13 @@
             "excludeByName": { "Time": true },
             "renameByName": {
               "client": "Cliente",
-              "sensor": "Sensor",
-              "Value": "Eventos",
-              "Value #A": "Eventos"
+              "sensor": "Sensor"
             }
           }
+        },
+        {
+          "id": "renameByRegex",
+          "options": { "regex": "^Value.*$", "renamePattern": "Eventos" }
         }
       ],
       "options": {
@@ -302,11 +304,13 @@
             "excludeByName": { "Time": true },
             "renameByName": {
               "client": "Cliente",
-              "sensor": "Sensor",
-              "Value": "Eventos (24h)",
-              "Value #A": "Eventos (24h)"
+              "sensor": "Sensor"
             }
           }
+        },
+        {
+          "id": "renameByRegex",
+          "options": { "regex": "^Value.*$", "renamePattern": "Checagens (24h)" }
         }
       ],
       "options": {
@@ -316,7 +320,7 @@
       "fieldConfig": {
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "Eventos (24h)" },
+            "matcher": { "id": "byName", "options": "Checagens (24h)" },
             "properties": [
               {
                 "id": "custom.displayMode",
@@ -360,11 +364,13 @@
             "renameByName": {
               "client": "Cliente",
               "sensor": "Sensor",
-              "version_to": "Versao",
-              "Value": "Eventos (30m)",
-              "Value #A": "Eventos (30m)"
+              "version_to": "Versao"
             }
           }
+        },
+        {
+          "id": "renameByRegex",
+          "options": { "regex": "^Value.*$", "renamePattern": "Checagens (30m)" }
         }
       ],
       "options": {
