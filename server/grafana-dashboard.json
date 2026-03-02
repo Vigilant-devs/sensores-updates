@@ -1,0 +1,382 @@
+{
+  "title": "Vigilant Sensor Updates",
+  "uid": "vigilant-updates",
+  "version": 2,
+  "schemaVersion": 38,
+  "refresh": "30s",
+  "time": { "from": "now-24h", "to": "now" },
+  "timezone": "browser",
+  "tags": ["vigilant", "sensors"],
+  "templating": {
+    "list": [
+      {
+        "name": "client",
+        "label": "Cliente",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "loki" },
+        "query": "label_values({job=\"vigilant-updater\"}, client)",
+        "multi": true,
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" }
+      },
+      {
+        "name": "sensor",
+        "label": "Sensor",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "loki" },
+        "query": "label_values({job=\"vigilant-updater\", client=~\"$client\"}, sensor)",
+        "multi": true,
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" }
+      },
+      {
+        "name": "event",
+        "label": "Evento",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "loki" },
+        "query": "label_values({job=\"vigilant-updater\"}, event)",
+        "multi": true,
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Total de Updates (periodo)",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({job=\"vigilant-updater\", client=~\"$client\", event=\"update_success\"}[$__range]))",
+          "legendFormat": "Updates OK"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "green" },
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Rollbacks (periodo)",
+      "type": "stat",
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({job=\"vigilant-updater\", client=~\"$client\", event=\"rollback\"}[$__range]))",
+          "legendFormat": "Rollbacks"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "red" },
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Falhas de Verificacao (periodo)",
+      "type": "stat",
+      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({job=\"vigilant-updater\", client=~\"$client\", event=\"verify_failed\"}[$__range]))",
+          "legendFormat": "Verify Failed"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "orange" },
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Sensores Ativos (com log no periodo)",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "count(count by (sensor) (count_over_time({job=\"vigilant-updater\", client=~\"$client\"}[$__range])))",
+          "legendFormat": "Sensores"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 1 },
+              { "color": "green", "value": 3 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Sensores sem Atividade (24h)",
+      "type": "stat",
+      "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "count(count by (sensor) (count_over_time({job=\"vigilant-updater\", client=~\"$client\"}[$__range]))) - count(count by (sensor) (count_over_time({job=\"vigilant-updater\", client=~\"$client\"}[24h])))",
+          "legendFormat": "Ausentes"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1 },
+              { "color": "red", "value": 2 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 10,
+      "title": "Log de Eventos — Tempo Real",
+      "type": "logs",
+      "gridPos": { "x": 0, "y": 4, "w": 24, "h": 14 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "{job=\"vigilant-updater\", client=~\"$client\", sensor=~\"$sensor\", event=~\"$event\"}",
+          "legendFormat": ""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "sortOrder": "Descending"
+      }
+    },
+    {
+      "id": 20,
+      "title": "Eventos por Sensor",
+      "type": "barchart",
+      "gridPos": { "x": 0, "y": 18, "w": 12, "h": 8 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "sum by (client, sensor, event) (count_over_time({job=\"vigilant-updater\", client=~\"$client\", sensor=~\"$sensor\"}[$__range]))",
+          "legendFormat": "{{client}} / {{sensor}} — {{event}}"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "title": "Timeline de Updates",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 18, "w": 12, "h": 8 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "sum by (event) (count_over_time({job=\"vigilant-updater\", client=~\"$client\", sensor=~\"$sensor\", event=~\"update_success|rollback|verify_failed\"}[$__interval]))",
+          "legendFormat": "{{event}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "update_success" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "rollback" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "verify_failed" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }]
+          }
+        ]
+      }
+    },
+    {
+      "id": 30,
+      "title": "Atividade por Sensor (periodo)",
+      "type": "table",
+      "gridPos": { "x": 0, "y": 26, "w": 24, "h": 8 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "sum by (client, sensor) (count_over_time({job=\"vigilant-updater\", client=~\"$client\"}[$__range]))",
+          "legendFormat": "",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        { "id": "labelsToFields", "options": { "mode": "columns" } },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "renameByName": {
+              "client": "Cliente",
+              "sensor": "Sensor"
+            }
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": { "regex": "^Value.*$", "renamePattern": "Eventos" }
+        }
+      ],
+      "options": {
+        "sortBy": [{ "displayName": "Cliente", "desc": false }],
+        "footer": { "show": false }
+      }
+    },
+    {
+      "id": 40,
+      "title": "Ultimo Heartbeat por Sensor (24h)",
+      "type": "table",
+      "gridPos": { "x": 0, "y": 34, "w": 12, "h": 8 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "sum by (client, sensor) (count_over_time({job=\"vigilant-updater\", client=~\"$client\", sensor=~\"$sensor\"}[24h]))",
+          "legendFormat": "",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        { "id": "labelsToFields", "options": { "mode": "columns" } },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "renameByName": {
+              "client": "Cliente",
+              "sensor": "Sensor"
+            }
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": { "regex": "^Value.*$", "renamePattern": "Checagens (24h)" }
+        }
+      ],
+      "options": {
+        "sortBy": [{ "displayName": "Sensor", "desc": false }],
+        "footer": { "show": false }
+      },
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Checagens (24h)" },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "red", "value": null },
+                    { "color": "green", "value": 1 }
+                  ]
+                }
+              },
+              { "id": "color", "value": { "mode": "thresholds" } }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 41,
+      "title": "Versao Atual por Sensor",
+      "type": "table",
+      "gridPos": { "x": 12, "y": 34, "w": 12, "h": 8 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "sum by (client, sensor, version_to) (count_over_time({job=\"vigilant-updater\", client=~\"$client\", sensor=~\"$sensor\", event=~\"no_update|update_success\"}[30m]))",
+          "legendFormat": "",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        { "id": "labelsToFields", "options": { "mode": "columns" } },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "renameByName": {
+              "client": "Cliente",
+              "sensor": "Sensor",
+              "version_to": "Versao"
+            }
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": { "regex": "^Value.*$", "renamePattern": "Checagens (30m)" }
+        }
+      ],
+      "options": {
+        "sortBy": [{ "displayName": "Sensor", "desc": false }],
+        "footer": { "show": false }
+      }
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+[Unit]
+Description=Vigilant Sensor Updater - Test Mode (every 1 hour)
+Documentation=https://github.com/Vigilant-devs/vigilant-sensor-updater
+
+[Timer]
+Unit=vigilant-updater.service
+# Fire 2 minutes after boot, then every hour
+OnBootSec=2min
+OnUnitActiveSec=1h
+Persistent=true
+
+[Install]
+WantedBy=timers.target
