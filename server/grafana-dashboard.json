@@ -250,13 +250,13 @@
     },
     {
       "id": 30,
-      "title": "Sensores por Cliente — Versao e Atividade",
+      "title": "Atividade por Sensor (periodo)",
       "type": "table",
       "gridPos": { "x": 0, "y": 26, "w": 24, "h": 8 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
-          "expr": "sum by (client, sensor, version_to) (count_over_time({job=\"vigilant-updater\", client=~\"$client\"}[$__range]))",
+          "expr": "sum by (client, sensor) (count_over_time({job=\"vigilant-updater\", client=~\"$client\"}[$__range]))",
           "legendFormat": "",
           "instant": true
         }
@@ -269,7 +269,6 @@
             "renameByName": {
               "client": "Cliente",
               "sensor": "Sensor",
-              "version_to": "Versao Atual",
               "Value": "Eventos"
             }
           }
@@ -343,7 +342,7 @@
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
-          "expr": "sum by (client, sensor, version_to) (count_over_time({job=\"vigilant-updater\", client=~\"$client\", sensor=~\"$sensor\", event=~\"no_update|update_success\"}[6h]))",
+          "expr": "sum by (client, sensor, version_to) (count_over_time({job=\"vigilant-updater\", client=~\"$client\", sensor=~\"$sensor\", event=~\"no_update|update_success\"}[30m]))",
           "legendFormat": "",
           "instant": true
         }
@@ -357,7 +356,7 @@
               "client": "Cliente",
               "sensor": "Sensor",
               "version_to": "Versao",
-              "Value": "Eventos (6h)"
+              "Value": "Eventos (30m)"
             }
           }
         }
