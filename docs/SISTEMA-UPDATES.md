@@ -10,7 +10,7 @@
 
 O sistema de atualização remota permite distribuir scripts, configurações e binários para todos os sensores Vigilant NDR de forma segura, auditada e automática — sem acesso direto a cada sensor.
 
-Cada sensor verifica periodicamente se há uma nova versão disponível no GitHub. Quando detectada, o pacote é baixado, verificado (SHA256 + assinatura GPG) e instalado atomicamente. Se o serviço de saúde falhar após a instalação, o sistema faz rollback automático para a versão anterior. Todos os eventos são reportados ao servidor de logs central via rsyslog/VPN, visíveis em tempo real no Grafana.
+Cada sensor verifica periodicamente se há uma nova versão disponível no GitHub. Quando detectada, o pacote é baixado, verificado (SHA256 + assinatura GPG) e instalado atomicamente. Se o serviço de saúde falhar após a instalação, o sistema faz rollback automático para a versão anterior. Todos os eventos são reportados ao servidor de logs central via rsyslog TCP, visíveis em tempo real no Grafana.
 
 ---
 
@@ -31,11 +31,11 @@ Cada sensor verifica periodicamente se há uma nova versão disponível no GitHu
      [sensor-01]    [sensor-02]    [sensor-N]
           │              │              │
           └──────────────┴──────────────┘
-                         │ rsyslog TCP / VPN
+                         │ rsyslog TCP :514
                          ▼
               ┌─────────────────────┐
               │  vigilant-logs      │
-              │  172.16.162.189     │
+              │  IP_SERVIDOR_LOGS   │
               │                     │
               │  rsyslog → Promtail │
               │  Loki               │
@@ -163,12 +163,12 @@ Cada fase gera um evento reportado de duas formas:
 
 | Canal | Mecanismo | Confiabilidade |
 |---|---|---|
-| **Primário** | `logger` → rsyslog TCP → `172.16.162.189:514` | Alta — fila local, entrega garantida via VPN |
+| **Primário** | `logger` → rsyslog TCP → `IP_SERVIDOR_LOGS:514` | Alta — fila local com entrega persistente |
 | **Secundário** | HTTP POST para `STATUS_URL` (opcional) | Melhor-esforço — silenciosamente ignorado se indisponível |
 
 **Formato do log (rsyslog → Promtail → Loki):**
 ```
-2026-03-02T15:30:00+00:00 sensor-01 vigilant-updater[PID]: event=update_success sensor=sensor-01 client=20004 hostname=sensor-01 v_from=2.0.2 v_to=2.0.3 rollback=false details=...
+TIMESTAMP sensor-XX vigilant-updater[PID]: event=update_success sensor=sensor-XX client=CLIENT_ID hostname=sensor-XX v_from=X.Y.Z v_to=X.Y.Z rollback=false details=...
 ```
 
 ---
@@ -178,7 +178,7 @@ Cada fase gera um evento reportado de duas formas:
 ### Publicar nova versão
 
 ```bash
-cd /Users/senna/WORK/Sensores-Updates
+cd /caminho/para/Sensores-Updates
 
 # 1. Faça as alterações em sensor/scripts/, sensor/configs/, etc.
 git add .
@@ -186,8 +186,8 @@ git commit -m "feat: descrição da mudança"
 git push origin main
 
 # 2. Crie e publique a tag (dispara o CI)
-git tag v2.0.4
-git push origin v2.0.4
+git tag vX.Y.Z
+git push origin vX.Y.Z
 
 # 3. Acompanhe o CI (~2 minutos)
 gh run watch
@@ -196,13 +196,13 @@ gh run watch
 git pull origin main
 
 # 5. Verifique o release publicado
-gh release view v2.0.4
+gh release view vX.Y.Z
 ```
 
 > **Regra de versionamento:**
-> - `PATCH` (2.0.X): ajustes de scripts/configs, sem mudança estrutural
-> - `MINOR` (2.X.0): novas funcionalidades, novos serviços
-> - `MAJOR` (X.0.0): mudanças incompatíveis, requer intervenção manual
+> - `PATCH` (X.Y.Z+1): ajustes de scripts/configs, sem mudança estrutural
+> - `MINOR` (X.Y+1.0): novas funcionalidades, novos serviços
+> - `MAJOR` (X+1.0.0): mudanças incompatíveis, requer intervenção manual
 
 ---
 
@@ -211,7 +211,7 @@ gh release view v2.0.4
 Útil após publicar uma versão crítica, sem aguardar o próximo ciclo do timer.
 
 ```bash
-for IP in 172.16.162.191 172.16.162.192 172.16.162.193 172.16.162.136; do
+for IP in IP_SENSOR_1 IP_SENSOR_2 IP_SENSOR_3 IP_SENSOR_N; do
   ssh -n -p 12222 root@$IP "systemctl start vigilant-updater.service" &
 done
 wait
@@ -219,7 +219,7 @@ wait
 
 Para um sensor específico:
 ```bash
-ssh -p 12222 root@172.16.162.191 "systemctl start vigilant-updater.service"
+ssh -p 12222 root@IP_SENSOR "systemctl start vigilant-updater.service"
 ```
 
 ---
@@ -236,9 +236,9 @@ ssh -t root@IP_SENSOR "bash /tmp/vigilant-sensor-install.sh"
 
 O instalador solicitará interativamente:
 - Hostname do sensor (ex: `sensor-05`)
-- Vigilant ID / Client ID (ex: `20004`)
-- IP da central de logs (ex: `172.16.162.189`)
-- Credenciais VPN e demais configurações
+- Vigilant ID / Client ID
+- IP da central de logs
+- Demais configurações do ambiente
 
 ---
 
@@ -304,7 +304,7 @@ ssh -p 12222 root@IP_SENSOR "
 
 ## Monitoramento — Grafana
 
-**URL:** `https://172.16.162.189`
+**URL:** `https://IP_SERVIDOR_LOGS`
 **Login:** `admin` / senha configurada no setup
 
 ### Painéis disponíveis
@@ -339,13 +339,10 @@ curl -s -u "admin:${PASS}" -X POST \
 
 ## Infraestrutura de Referência
 
-| Componente | IP | Função |
+| Componente | Endereço | Função |
 |---|---|---|
-| vigilant-logs | `172.16.162.189` | Servidor central: rsyslog, Loki, Promtail, Grafana, Nginx |
-| sensor-001 | `172.16.162.191` | Sensor NDR (sensor_id: sensor-1, client: 20004) |
-| sensor-002 | `172.16.162.192` | Sensor NDR (sensor_id: sensor-2, client: 20004) |
-| sensor-003 | `172.16.162.193` | Sensor NDR (sensor_id: sensor-3, client: 20004) |
-| sensor-004 | `172.16.162.136` | Sensor NDR (sensor_id: sensor-04, client: 20004) |
+| Servidor de Logs | `IP_SERVIDOR_LOGS` | rsyslog, Loki, Promtail, Grafana, Nginx |
+| Sensor N | `IP_SENSOR_N` | Sensor NDR (sensor_id configurado no install) |
 
 **Portas:**
 - SSH nos sensores: `12222`
@@ -375,7 +372,7 @@ Pacote com qualquer falha de verificação é **rejeitado sem instalação**, ev
 
 Para regenerar as chaves (apenas se comprometidas):
 ```bash
-cd /Users/senna/WORK/Sensores-Updates
+cd /caminho/para/Sensores-Updates
 ./tools/generate-gpg-key.sh
 # Output: tools/vigilant-private.key.asc (não commitar)
 #         updater/vigilant.pub.gpg (commitar)
@@ -397,10 +394,10 @@ git push origin main
 | `fetch_failed` | URL do manifest incorreta ou sem rede | `curl -v URL_MANIFEST` no sensor | Verificar `MANIFEST_URL` em `vigilant-updater.sh` |
 | `verify_failed` | Chave GPG do sensor desatualizada | `cat /vigilant/scripts/vigilantsensor/updater/vigilant.pub.gpg` | Republicar release com chave correta |
 | `jq not installed` | `jq` ausente no sensor | `which jq` | `dnf install -y jq` |
-| `post_install_skip` | `post-install.sh` não encontrado no pacote | `tar -tzf sensor-pack.tar.gz | head` | Verificar `tools/pack-release.sh` |
+| `post_install_skip` | `post-install.sh` não encontrado no pacote | `tar -tzf sensor-pack.tar.gz \| head` | Verificar `tools/pack-release.sh` |
 | `no_update` constante | Sensor já na versão mais recente | Esperado | Publicar nova versão via tag |
 | `rollback` frequente | Serviço falha após update | `journalctl -u snort -n 50` | Investigar conflito de config |
-| Grafana sem dados | rsyslog não encaminha para central | `systemctl status rsyslog` no sensor | `systemctl restart rsyslog` |
+| Grafana sem dados | rsyslog não encaminha para o servidor central | `systemctl status rsyslog` no sensor | `systemctl restart rsyslog` |
 | Sensor ausente no Grafana | `sensor_id` ou `client_id` não configurados | `cat /vigilant/scripts/sensor_id` | Criar arquivos de identidade manualmente |
 | CI push rejeitado | manifest.json conflita com main | Verificar Actions log | `git pull --rebase origin main && git push` |
 
@@ -436,7 +433,7 @@ Para distribuir um novo arquivo a todos os sensores:
 ```bash
 git add sensor/
 git commit -m "feat: adiciona novo script XYZ"
-git tag v2.0.X && git push origin main && git push origin v2.0.X
+git tag vX.Y.Z && git push origin main && git push origin vX.Y.Z
 ```
 
 Os sensores receberão o arquivo automaticamente no próximo ciclo do timer (ou imediatamente se forçado via `systemctl start vigilant-updater.service`).
