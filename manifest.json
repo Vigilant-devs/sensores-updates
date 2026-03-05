@@ -1,10 +1,10 @@
 {
-  "version": "2.0.3",
-  "released_at": "2026-03-02T17:19:37Z",
-  "download_url": "https://github.com/Vigilant-devs/sensores-updates/releases/download/v2.0.3/sensor-pack.tar.gz",
-  "sha256": "f2467da30e1b0a95ca84d852e6c270d9fb3c45eecdced8bb8d28014e23bbdac1",
-  "gpg_sig_url": "https://github.com/Vigilant-devs/sensores-updates/releases/download/v2.0.3/sensor-pack.tar.gz.sig",
+  "version": "2.0.4",
+  "released_at": "2026-03-05T19:56:02Z",
+  "download_url": "https://github.com/Vigilant-devs/sensores-updates/releases/download/v2.0.4/sensor-pack.tar.gz",
+  "sha256": "80b3a0057ed0b0a5f1f2acd7f70a6aab5a278726622710c19e68db264d470b90",
+  "gpg_sig_url": "https://github.com/Vigilant-devs/sensores-updates/releases/download/v2.0.4/sensor-pack.tar.gz.sig",
   "min_supported_version": "1.0.0",
   "rollback_safe": true,
-  "changelog": "Release v2.0.3"
+  "changelog": "Release v2.0.4"
 }
