@@ -39,7 +39,6 @@ PROMTAIL_VERSION="3.3.2"
 
 LOG_DIR="/var/log/vigilant"
 LOKI_DIR="/var/lib/loki"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
 ok()   { echo -e "${GREEN}[OK]${NC}    $*"; }
@@ -109,7 +108,22 @@ chmod 750 "$LOG_DIR"
 touch "${LOG_DIR}/sensor-updates.log"
 chmod 640 "${LOG_DIR}/sensor-updates.log"
 
-cp "${SCRIPT_DIR}/rsyslog-server.conf" /etc/rsyslog.d/40-vigilant-sensors.conf
+cat > /etc/rsyslog.d/40-vigilant-sensors.conf << 'EOF'
+module(load="imtcp")
+input(type="imtcp" port="514")
+
+$template VigilantFormat,"%TIMESTAMP:::date-rfc3339% %HOSTNAME% %syslogtag%%msg%\n"
+
+if $programname == 'vigilant-updater' then {
+    action(
+        type="omfile"
+        file="/var/log/vigilant/sensor-updates.log"
+        template="VigilantFormat"
+        flushOnTXEnd="on"
+    )
+    stop
+}
+EOF
 
 # SELinux: permitir rsyslog ouvir na porta 514 TCP (padrão, mas garantir)
 if command -v semanage &>/dev/null; then
@@ -139,7 +153,59 @@ find /tmp/loki-extract -name "loki-linux-${LOKI_ARCH}" -exec install -m 755 {} /
 rm -rf /tmp/loki.zip /tmp/loki-extract
 ok "Loki instalado em /usr/local/bin/loki"
 
-cp "${SCRIPT_DIR}/loki-config.yaml" /etc/loki/loki-config.yaml
+cat > /etc/loki/loki-config.yaml << 'EOF'
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+  log_level: warn
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /var/lib/loki
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+storage_config:
+  tsdb_shipper:
+    active_index_directory: /var/lib/loki/index
+    cache_location: /var/lib/loki/index_cache
+  filesystem:
+    directory: /var/lib/loki/chunks
+
+limits_config:
+  reject_old_samples: true
+  reject_old_samples_max_age: 720h
+  max_query_series: 5000
+  retention_period: 2160h
+  unordered_writes: true
+
+compactor:
+  working_directory: /var/lib/loki/compactor
+  retention_enabled: true
+  retention_delete_delay: 2h
+  delete_request_store: filesystem
+
+query_range:
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled: true
+        max_size_mb: 100
+EOF
 
 id loki &>/dev/null || useradd -r -s /sbin/nologin -d "$LOKI_DIR" loki
 chown -R loki:loki "$LOKI_DIR" /etc/loki
@@ -190,7 +256,41 @@ rm -rf /tmp/promtail.zip /tmp/promtail-extract
 ok "Promtail instalado em /usr/local/bin/promtail"
 
 mkdir -p /etc/promtail /var/lib/promtail
-cp "${SCRIPT_DIR}/promtail-config.yaml" /etc/promtail/promtail-config.yaml
+cat > /etc/promtail/promtail-config.yaml << 'EOF'
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /var/lib/promtail/positions.yaml
+
+clients:
+  - url: http://localhost:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: vigilant-sensor-updates
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: vigilant-updater
+          __path__: /var/log/vigilant/sensor-updates.log
+
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<log_time>\S+)\s+(?P<sensor_host>\S+)\s+vigilant-updater(?:\[\d+\])?:\s*event=(?P<event>\S+)\s+sensor=(?P<sensor>\S+)\s+client=(?P<client>\S+)\s+hostname=(?P<hostname>\S+)\s+v_from=(?P<version_from>\S+)\s+v_to=(?P<version_to>\S+)\s+rollback=(?P<rollback>\S+)\s+details=(?P<details>.*)$'
+      - labels:
+          event:
+          sensor:
+          client:
+          hostname:
+          version_from:
+          version_to:
+          rollback:
+      - timestamp:
+          source: log_time
+          format: RFC3339
+EOF
 
 id promtail &>/dev/null || useradd -r -s /sbin/nologin -d /var/lib/promtail promtail
 # Promtail precisa ler /var/log/vigilant
@@ -250,8 +350,298 @@ ok "Grafana instalado"
 
 # Datasource Loki (auto-provisionado)
 mkdir -p /etc/grafana/provisioning/{datasources,dashboards}
-cp "${SCRIPT_DIR}/grafana-datasource.yaml" /etc/grafana/provisioning/datasources/vigilant-loki.yaml
-cp "${SCRIPT_DIR}/grafana-dashboard.json"  /etc/grafana/provisioning/dashboards/
+cat > /etc/grafana/provisioning/datasources/vigilant-loki.yaml << 'EOF'
+apiVersion: 1
+
+datasources:
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: http://localhost:3100
+    isDefault: true
+    editable: false
+    jsonData:
+      maxLines: 5000
+EOF
+
+cat > /etc/grafana/provisioning/dashboards/grafana-dashboard.json << 'EOF'
+{
+  "title": "Vigilant Sensor Updates",
+  "uid": "vigilant-updates",
+  "version": 2,
+  "schemaVersion": 38,
+  "refresh": "30s",
+  "time": { "from": "now-24h", "to": "now" },
+  "timezone": "browser",
+  "tags": ["vigilant", "sensors"],
+  "templating": {
+    "list": [
+      {
+        "name": "client",
+        "label": "Cliente",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "loki" },
+        "query": "label_values({job=\"vigilant-updater\"}, client)",
+        "multi": true,
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" }
+      },
+      {
+        "name": "sensor",
+        "label": "Sensor",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "loki" },
+        "query": "label_values({job=\"vigilant-updater\", client=~\"$client\"}, sensor)",
+        "multi": true,
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" }
+      },
+      {
+        "name": "event",
+        "label": "Evento",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "loki" },
+        "query": "label_values({job=\"vigilant-updater\"}, event)",
+        "multi": true,
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Total de Updates (periodo)",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({job=\"vigilant-updater\", client=~\"$client\", event=\"update_success\"}[$__range]))",
+          "legendFormat": "Updates OK"
+        }
+      ],
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "auto" },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "green" }, "unit": "short" } }
+    },
+    {
+      "id": 2,
+      "title": "Rollbacks (periodo)",
+      "type": "stat",
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({job=\"vigilant-updater\", client=~\"$client\", event=\"rollback\"}[$__range]))",
+          "legendFormat": "Rollbacks"
+        }
+      ],
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "auto" },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "red" }, "unit": "short" } }
+    },
+    {
+      "id": 3,
+      "title": "Falhas de Verificacao (periodo)",
+      "type": "stat",
+      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({job=\"vigilant-updater\", client=~\"$client\", event=\"verify_failed\"}[$__range]))",
+          "legendFormat": "Verify Failed"
+        }
+      ],
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "auto" },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "orange" }, "unit": "short" } }
+    },
+    {
+      "id": 4,
+      "title": "Sensores Ativos (com log no periodo)",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "count(count by (sensor) (count_over_time({job=\"vigilant-updater\", client=~\"$client\"}[$__range])))",
+          "legendFormat": "Sensores"
+        }
+      ],
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "auto" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 1 },
+              { "color": "green", "value": 3 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Sensores sem Atividade (24h)",
+      "type": "stat",
+      "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "count(count by (sensor) (count_over_time({job=\"vigilant-updater\", client=~\"$client\"}[$__range]))) - count(count by (sensor) (count_over_time({job=\"vigilant-updater\", client=~\"$client\"}[24h])))",
+          "legendFormat": "Ausentes"
+        }
+      ],
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "auto" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1 },
+              { "color": "red", "value": 2 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 10,
+      "title": "Log de Eventos — Tempo Real",
+      "type": "logs",
+      "gridPos": { "x": 0, "y": 4, "w": 24, "h": 14 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "{job=\"vigilant-updater\", client=~\"$client\", sensor=~\"$sensor\", event=~\"$event\"}",
+          "legendFormat": ""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "sortOrder": "Descending"
+      }
+    },
+    {
+      "id": 20,
+      "title": "Eventos por Sensor",
+      "type": "barchart",
+      "gridPos": { "x": 0, "y": 18, "w": 12, "h": 8 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "sum by (client, sensor, event) (count_over_time({job=\"vigilant-updater\", client=~\"$client\", sensor=~\"$sensor\"}[$__range]))",
+          "legendFormat": "{{client}} / {{sensor}} — {{event}}"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "title": "Timeline de Updates",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 18, "w": 12, "h": 8 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "sum by (event) (count_over_time({job=\"vigilant-updater\", client=~\"$client\", sensor=~\"$sensor\", event=~\"update_success|rollback|verify_failed\"}[$__interval]))",
+          "legendFormat": "{{event}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "custom": { "drawStyle": "bars", "fillOpacity": 60 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "update_success" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }] },
+          { "matcher": { "id": "byName", "options": "rollback" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }] },
+          { "matcher": { "id": "byName", "options": "verify_failed" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }] }
+        ]
+      }
+    },
+    {
+      "id": 30,
+      "title": "Atividade por Sensor (periodo)",
+      "type": "table",
+      "gridPos": { "x": 0, "y": 26, "w": 24, "h": 8 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "sum by (client, sensor) (count_over_time({job=\"vigilant-updater\", client=~\"$client\"}[$__range]))",
+          "legendFormat": "",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        { "id": "labelsToFields", "options": { "mode": "columns" } },
+        { "id": "organize", "options": { "excludeByName": { "Time": true }, "renameByName": { "client": "Cliente", "sensor": "Sensor" } } },
+        { "id": "renameByRegex", "options": { "regex": "^Value.*$", "renamePattern": "Eventos" } }
+      ],
+      "options": { "sortBy": [{ "displayName": "Cliente", "desc": false }], "footer": { "show": false } }
+    },
+    {
+      "id": 40,
+      "title": "Ultimo Heartbeat por Sensor (24h)",
+      "type": "table",
+      "gridPos": { "x": 0, "y": 34, "w": 12, "h": 8 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "sum by (client, sensor) (count_over_time({job=\"vigilant-updater\", client=~\"$client\", sensor=~\"$sensor\"}[24h]))",
+          "legendFormat": "",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        { "id": "labelsToFields", "options": { "mode": "columns" } },
+        { "id": "organize", "options": { "excludeByName": { "Time": true }, "renameByName": { "client": "Cliente", "sensor": "Sensor" } } },
+        { "id": "renameByRegex", "options": { "regex": "^Value.*$", "renamePattern": "Checagens (24h)" } }
+      ],
+      "options": { "sortBy": [{ "displayName": "Sensor", "desc": false }], "footer": { "show": false } },
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Checagens (24h)" },
+            "properties": [
+              { "id": "custom.displayMode", "value": "color-background" },
+              { "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] } },
+              { "id": "color", "value": { "mode": "thresholds" } }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 41,
+      "title": "Versao Atual por Sensor",
+      "type": "table",
+      "gridPos": { "x": 12, "y": 34, "w": 12, "h": 8 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "sum by (client, sensor, version_to) (count_over_time({job=\"vigilant-updater\", client=~\"$client\", sensor=~\"$sensor\", event=~\"no_update|update_success\"}[30m]))",
+          "legendFormat": "",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        { "id": "labelsToFields", "options": { "mode": "columns" } },
+        { "id": "organize", "options": { "excludeByName": { "Time": true }, "renameByName": { "client": "Cliente", "sensor": "Sensor", "version_to": "Versao" } } },
+        { "id": "renameByRegex", "options": { "regex": "^Value.*$", "renamePattern": "Checagens (30m)" } }
+      ],
+      "options": { "sortBy": [{ "displayName": "Sensor", "desc": false }], "footer": { "show": false } }
+    }
+  ]
+}
+EOF
 
 cat > /etc/grafana/provisioning/dashboards/vigilant.yaml << 'EOF'
 apiVersion: 1

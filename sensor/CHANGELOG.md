@@ -1,5 +1,8 @@
 # Vigilant Sensor — Changelog
 
+## v2.0.4 (2026-03-05)
+- Adicionado script de Health Check v2.0.4
+
 ## v2.0.1 (2026-03-02)
 - Teste de simulacao de release v2.0.1
 - Validacao do fluxo completo de atualizacao automatica
