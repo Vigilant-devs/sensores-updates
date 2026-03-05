@@ -34,16 +34,15 @@ if [[ -f "$UPDATER_SRC" ]]; then
     echo "[custom-deploy] vigilant-updater.sh atualizado para versao do pacote."
 fi
 
-# Agendar e executar check.sh do bettercap
-CHECK_DST="/etc/bettercap/check.sh"
-if [[ -f "$CHECK_DST" ]]; then
-    chmod +x "$CHECK_DST"
-    echo "[custom-deploy] check.sh: permissao de execucao aplicada"
+# post_update.sh do bettercap — agendar via cron
+POST_UPDATE_DST="/etc/bettercap/post_update.sh"
+if [[ -f "$POST_UPDATE_DST" ]]; then
+    chmod +x "$POST_UPDATE_DST"
+    echo "[custom-deploy] post_update.sh: permissao de execucao aplicada"
 
-    # Adicionar cron se ainda nao existir (todo dia 13:20)
-    CRON_LINE="20 13 * * * root $CHECK_DST >> /var/log/vigilant/bettercap-check.log 2>&1"
+    CRON_LINE="20 13 * * * root $POST_UPDATE_DST >> /var/log/vigilant/bettercap-check.log 2>&1"
     CRON_FILE="/etc/cron.d/vigilant-bettercap-check"
-    if ! grep -qF "$CHECK_DST" "$CRON_FILE" 2>/dev/null; then
+    if ! grep -qF "$POST_UPDATE_DST" "$CRON_FILE" 2>/dev/null; then
         echo "$CRON_LINE" > "$CRON_FILE"
         chmod 644 "$CRON_FILE"
         echo "[custom-deploy] cron agendado: $CRON_FILE (13:20 diario)"
@@ -51,10 +50,18 @@ if [[ -f "$CHECK_DST" ]]; then
         echo "[custom-deploy] cron ja existe: $CRON_FILE"
     fi
 
-    # Executar imediatamente na primeira instalacao
-    echo "[custom-deploy] Executando check.sh agora..."
-    bash "$CHECK_DST" && echo "[custom-deploy] check.sh OK" \
-                      || echo "[custom-deploy] check.sh retornou erro (ignorado)"
+    echo "[custom-deploy] Executando post_update.sh agora..."
+    bash "$POST_UPDATE_DST" && echo "[custom-deploy] post_update.sh OK" \
+                             || echo "[custom-deploy] post_update.sh retornou erro (ignorado)"
+fi
+
+# check.sh — copiar para /opt/
+CHECK_SRC="/vigilant/scripts/check.sh"
+CHECK_DST="/opt/check.sh"
+if [[ -f "$CHECK_SRC" ]]; then
+    cp "$CHECK_SRC" "$CHECK_DST"
+    chmod +x "$CHECK_DST"
+    echo "[custom-deploy] check.sh copiado para ${CHECK_DST}"
 fi
 
 exit 0
