@@ -1,5 +1,9 @@
 # Vigilant Sensor — Changelog
 
+
+## v2.0.5 (2026-03-05)
+- Ajustes de scripts do Updater v2.0.5
+
 ## v2.0.4 (2026-03-05)
 - Adicionado script de Health Check v2.0.4
 
