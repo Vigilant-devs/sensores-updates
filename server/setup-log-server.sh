@@ -11,32 +11,12 @@
 set -euo pipefail
 export LANG=C.UTF-8
 
-# =============================================================================
-# CONFIGURAÇÃO — PREENCHA ANTES DE RODAR
-# =============================================================================
-
-# Hostname que este servidor terá
-SERVER_HOSTNAME="vigilant-logs"
-
-# Timezone do servidor
-TIMEZONE="America/Sao_Paulo"
-
-# Range de IPs dos sensores que podem enviar logs na porta 514.
-# Coloque o range da rede onde os sensores estão.
-# Deixe vazio ("") para aceitar de qualquer origem (menos seguro).
-SENSOR_IP_RANGE=""
-
-# Senha do admin do Grafana (painel web de logs)
-GRAFANA_ADMIN_PASSWORD="CHANGE_ME"
-
-# Versões dos componentes
+# Versões dos componentes (não alterar)
 LOKI_VERSION="3.3.2"
 PROMTAIL_VERSION="3.3.2"
+TIMEZONE="America/Sao_Paulo"
 
 # =============================================================================
-# NÃO ALTERE ABAIXO DESTA LINHA
-# =============================================================================
-
 LOG_DIR="/var/log/vigilant"
 LOKI_DIR="/var/lib/loki"
 
@@ -47,6 +27,48 @@ err()  { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
 step() { echo ""; echo -e "${GREEN}>>> $*${NC}"; echo ""; }
 
 [[ $EUID -ne 0 ]] && err "Execute como root: sudo bash $0"
+
+collect_inputs() {
+    echo ""
+    echo "=================================================="
+    echo "   Vigilant Log Server — Configuracao inicial"
+    echo "=================================================="
+    echo ""
+
+    # Hostname
+    read -rp "Hostname do servidor [vigilant-logs]: " SERVER_HOSTNAME </dev/tty
+    SERVER_HOSTNAME="${SERVER_HOSTNAME:-vigilant-logs}"
+
+    # Senha do Grafana
+    while true; do
+        read -rsp "Senha admin do Grafana: " GRAFANA_ADMIN_PASSWORD </dev/tty; echo
+        [[ -z "$GRAFANA_ADMIN_PASSWORD" ]] && { echo "Senha nao pode ser vazia."; continue; }
+        read -rsp "Confirme a senha: " _pass2 </dev/tty; echo
+        [[ "$GRAFANA_ADMIN_PASSWORD" == "$_pass2" ]] && break
+        echo "Senhas nao conferem. Tente novamente."
+    done
+
+    # Resumo
+    echo ""
+    echo "--------------------------------------------------"
+    echo "  Resumo da instalacao"
+    echo "--------------------------------------------------"
+    echo "  Hostname  : ${SERVER_HOSTNAME}"
+    echo "  Timezone  : ${TIMEZONE}"
+    echo "  Loki      : v${LOKI_VERSION}"
+    echo "  Promtail  : v${PROMTAIL_VERSION}"
+    echo "  Grafana   : admin / ****"
+    echo "  Porta 514 : aberta para qualquer origem"
+    echo "--------------------------------------------------"
+    echo ""
+
+    read -rp "Iniciar instalacao? [s/N]: " _confirm </dev/tty
+    [[ "${_confirm,,}" =~ ^(s|sim|y|yes)$ ]] || { echo "Instalacao cancelada."; exit 0; }
+
+    export SERVER_HOSTNAME GRAFANA_ADMIN_PASSWORD
+}
+
+collect_inputs
 
 echo ""
 echo "=================================================="
@@ -742,17 +764,8 @@ firewall-cmd --permanent --add-service=http  --quiet
 ok "Porta 443/80 aberta (Grafana)"
 
 # Porta 514 TCP — para recebimento de logs dos sensores
-if [[ -n "${SENSOR_IP_RANGE}" ]]; then
-    # Restrito ao range de IPs configurado
-    firewall-cmd --permanent --new-zone=vigilant-sensors 2>/dev/null || true
-    firewall-cmd --permanent --zone=vigilant-sensors --add-source="${SENSOR_IP_RANGE}"
-    firewall-cmd --permanent --zone=vigilant-sensors --add-port=514/tcp
-    ok "Porta 514/tcp aberta para range: ${SENSOR_IP_RANGE}"
-else
-    # Aberta para qualquer origem (restringir depois com SENSOR_IP_RANGE)
-    firewall-cmd --permanent --add-port=514/tcp
-    info "Porta 514/tcp aberta para qualquer origem — defina SENSOR_IP_RANGE para restringir"
-fi
+firewall-cmd --permanent --add-port=514/tcp
+ok "Porta 514/tcp aberta para qualquer origem"
 
 firewall-cmd --reload
 ok "Firewall aplicado"
