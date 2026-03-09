@@ -391,7 +391,7 @@ cat > /etc/grafana/provisioning/dashboards/grafana-dashboard.json << 'EOF'
 {
   "title": "Vigilant Sensor Updates",
   "uid": "vigilant-updates",
-  "version": 2,
+  "version": 3,
   "schemaVersion": 38,
   "refresh": "30s",
   "time": { "from": "now-24h", "to": "now" },
@@ -434,9 +434,9 @@ cat > /etc/grafana/provisioning/dashboards/grafana-dashboard.json << 'EOF'
   "panels": [
     {
       "id": 1,
-      "title": "Total de Updates (periodo)",
+      "title": "Updates OK",
       "type": "stat",
-      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 3 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
@@ -449,9 +449,9 @@ cat > /etc/grafana/provisioning/dashboards/grafana-dashboard.json << 'EOF'
     },
     {
       "id": 2,
-      "title": "Rollbacks (periodo)",
+      "title": "Rollbacks",
       "type": "stat",
-      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 3 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
@@ -464,9 +464,9 @@ cat > /etc/grafana/provisioning/dashboards/grafana-dashboard.json << 'EOF'
     },
     {
       "id": 3,
-      "title": "Falhas de Verificacao (periodo)",
+      "title": "Verify Failed",
       "type": "stat",
-      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 3 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
@@ -479,9 +479,9 @@ cat > /etc/grafana/provisioning/dashboards/grafana-dashboard.json << 'EOF'
     },
     {
       "id": 4,
-      "title": "Sensores Ativos (com log no periodo)",
+      "title": "Sensores Ativos",
       "type": "stat",
-      "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 3 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
@@ -507,9 +507,9 @@ cat > /etc/grafana/provisioning/dashboards/grafana-dashboard.json << 'EOF'
     },
     {
       "id": 5,
-      "title": "Sensores sem Atividade (24h)",
+      "title": "Sem Atividade 24h",
       "type": "stat",
-      "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 3 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
@@ -537,7 +537,7 @@ cat > /etc/grafana/provisioning/dashboards/grafana-dashboard.json << 'EOF'
       "id": 10,
       "title": "Log de Eventos — Tempo Real",
       "type": "logs",
-      "gridPos": { "x": 0, "y": 4, "w": 24, "h": 14 },
+      "gridPos": { "x": 0, "y": 3, "w": 24, "h": 10 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
@@ -547,19 +547,20 @@ cat > /etc/grafana/provisioning/dashboards/grafana-dashboard.json << 'EOF'
       ],
       "options": {
         "showTime": true,
-        "showLabels": true,
+        "showLabels": false,
         "showCommonLabels": false,
         "wrapLogMessage": true,
         "prettifyLogMessage": false,
         "enableLogDetails": true,
-        "sortOrder": "Descending"
+        "sortOrder": "Descending",
+        "dedupStrategy": "none"
       }
     },
     {
       "id": 20,
       "title": "Eventos por Sensor",
       "type": "barchart",
-      "gridPos": { "x": 0, "y": 18, "w": 12, "h": 8 },
+      "gridPos": { "x": 0, "y": 13, "w": 12, "h": 7 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
@@ -572,7 +573,7 @@ cat > /etc/grafana/provisioning/dashboards/grafana-dashboard.json << 'EOF'
       "id": 21,
       "title": "Timeline de Updates",
       "type": "timeseries",
-      "gridPos": { "x": 12, "y": 18, "w": 12, "h": 8 },
+      "gridPos": { "x": 12, "y": 13, "w": 12, "h": 7 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
@@ -591,51 +592,107 @@ cat > /etc/grafana/provisioning/dashboards/grafana-dashboard.json << 'EOF'
     },
     {
       "id": 30,
-      "title": "Atividade por Sensor (periodo)",
+      "title": "Atividade por Sensor",
       "type": "table",
-      "gridPos": { "x": 0, "y": 26, "w": 24, "h": 8 },
+      "gridPos": { "x": 0, "y": 20, "w": 8, "h": 8 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
-          "expr": "sum by (client, sensor) (count_over_time({job=\"vigilant-updater\", client=~\"$client\"}[$__range]))",
+          "expr": "sum by (client, sensor, event) (count_over_time({job=\"vigilant-updater\", client=~\"$client\"}[$__range]))",
           "legendFormat": "",
           "instant": true
         }
       ],
       "transformations": [
         { "id": "labelsToFields", "options": { "mode": "columns" } },
-        { "id": "organize", "options": { "excludeByName": { "Time": true }, "renameByName": { "client": "Cliente", "sensor": "Sensor" } } },
-        { "id": "renameByRegex", "options": { "regex": "^Value.*$", "renamePattern": "Eventos" } }
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "renameByName": { "client": "Cliente", "sensor": "Sensor", "event": "Evento" }
+          }
+        },
+        { "id": "renameByRegex", "options": { "regex": "^Value.*$", "renamePattern": "Count" } },
+        { "id": "sortBy", "options": { "fields": [{ "displayName": "Sensor", "desc": false }] } }
       ],
-      "options": { "sortBy": [{ "displayName": "Cliente", "desc": false }], "footer": { "show": false } }
+      "options": { "footer": { "show": false } }
     },
     {
       "id": 40,
-      "title": "Ultimo Heartbeat por Sensor (24h)",
+      "title": "Ultimo Heartbeat por Sensor",
       "type": "table",
-      "gridPos": { "x": 0, "y": 34, "w": 12, "h": 8 },
+      "gridPos": { "x": 8, "y": 20, "w": 8, "h": 8 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
-          "expr": "sum by (client, sensor) (count_over_time({job=\"vigilant-updater\", client=~\"$client\", sensor=~\"$sensor\"}[24h]))",
-          "legendFormat": "",
-          "instant": true
+          "expr": "{job=\"vigilant-updater\", client=~\"$client\", sensor=~\"$sensor\"} | json",
+          "queryType": "range",
+          "maxLines": 500,
+          "legendFormat": ""
         }
       ],
       "transformations": [
-        { "id": "labelsToFields", "options": { "mode": "columns" } },
-        { "id": "organize", "options": { "excludeByName": { "Time": true }, "renameByName": { "client": "Cliente", "sensor": "Sensor" } } },
-        { "id": "renameByRegex", "options": { "regex": "^Value.*$", "renamePattern": "Checagens (24h)" } }
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "id": true, "tsNs": true, "labels": true, "Line": true,
+              "timestamp": true, "version_from": true, "version_to": true, "details": true
+            },
+            "renameByName": {
+              "Time": "Visto Em",
+              "sensor": "Sensor",
+              "client": "Cliente",
+              "event": "Evento"
+            }
+          }
+        },
+        { "id": "sortBy", "options": { "fields": [{ "displayName": "Visto Em", "desc": false }] } },
+        {
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "Sensor":   { "aggregations": [],       "operation": "groupby"   },
+              "Cliente":  { "aggregations": [],       "operation": "groupby"   },
+              "Visto Em": { "aggregations": ["last"], "operation": "aggregate" },
+              "Evento":   { "aggregations": ["last"], "operation": "aggregate" }
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "Visto Em (last)": "Visto Em",
+              "Evento (last)":   "Evento"
+            }
+          }
+        },
+        { "id": "sortBy", "options": { "fields": [{ "displayName": "Sensor", "desc": false }] } }
       ],
-      "options": { "sortBy": [{ "displayName": "Sensor", "desc": false }], "footer": { "show": false } },
+      "options": { "footer": { "show": false } },
       "fieldConfig": {
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "Checagens (24h)" },
+            "matcher": { "id": "byName", "options": "Visto Em" },
+            "properties": [{ "id": "unit", "value": "dateTimeAsLocal" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Evento" },
             "properties": [
               { "id": "custom.displayMode", "value": "color-background" },
-              { "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] } },
-              { "id": "color", "value": { "mode": "thresholds" } }
+              {
+                "id": "mappings",
+                "value": [{
+                  "type": "value",
+                  "options": {
+                    "update_success": { "text": "update_success", "color": "green",  "index": 0 },
+                    "no_update":      { "text": "no_update",      "color": "blue",   "index": 1 },
+                    "rollback":       { "text": "rollback",       "color": "red",    "index": 2 },
+                    "verify_failed":  { "text": "verify_failed",  "color": "orange", "index": 3 }
+                  }
+                }]
+              }
             ]
           }
         ]
@@ -645,21 +702,64 @@ cat > /etc/grafana/provisioning/dashboards/grafana-dashboard.json << 'EOF'
       "id": 41,
       "title": "Versao Atual por Sensor",
       "type": "table",
-      "gridPos": { "x": 12, "y": 34, "w": 12, "h": 8 },
+      "gridPos": { "x": 16, "y": 20, "w": 8, "h": 8 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
-          "expr": "sum by (client, sensor, version_to) (count_over_time({job=\"vigilant-updater\", client=~\"$client\", sensor=~\"$sensor\", event=~\"no_update|update_success\"}[30m]))",
-          "legendFormat": "",
-          "instant": true
+          "expr": "{job=\"vigilant-updater\", client=~\"$client\", sensor=~\"$sensor\", event=~\"no_update|update_success\"} | json",
+          "queryType": "range",
+          "maxLines": 500,
+          "legendFormat": ""
         }
       ],
       "transformations": [
-        { "id": "labelsToFields", "options": { "mode": "columns" } },
-        { "id": "organize", "options": { "excludeByName": { "Time": true }, "renameByName": { "client": "Cliente", "sensor": "Sensor", "version_to": "Versao" } } },
-        { "id": "renameByRegex", "options": { "regex": "^Value.*$", "renamePattern": "Checagens (30m)" } }
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "id": true, "tsNs": true, "labels": true, "Line": true,
+              "timestamp": true, "version_from": true, "details": true, "event": true
+            },
+            "renameByName": {
+              "Time":       "Atualizado Em",
+              "sensor":     "Sensor",
+              "client":     "Cliente",
+              "version_to": "Versao"
+            }
+          }
+        },
+        { "id": "sortBy", "options": { "fields": [{ "displayName": "Atualizado Em", "desc": false }] } },
+        {
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "Sensor":        { "aggregations": [],       "operation": "groupby"   },
+              "Cliente":       { "aggregations": [],       "operation": "groupby"   },
+              "Atualizado Em": { "aggregations": ["last"], "operation": "aggregate" },
+              "Versao":        { "aggregations": ["last"], "operation": "aggregate" }
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "Atualizado Em (last)": "Atualizado Em",
+              "Versao (last)":        "Versao"
+            }
+          }
+        },
+        { "id": "sortBy", "options": { "fields": [{ "displayName": "Sensor", "desc": false }] } }
       ],
-      "options": { "sortBy": [{ "displayName": "Sensor", "desc": false }], "footer": { "show": false } }
+      "options": { "footer": { "show": false } },
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Atualizado Em" },
+            "properties": [{ "id": "unit", "value": "dateTimeAsLocal" }]
+          }
+        ]
+      }
     }
   ]
 }

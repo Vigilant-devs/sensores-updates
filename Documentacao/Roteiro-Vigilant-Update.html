@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roteiro de Testes — Vigilant Sensor Update System</title>
+<style>
+/* ============================================================
+   RESET
+============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ============================================================
+   DESIGN TOKENS — tema preto de alto contraste
+============================================================ */
+:root {
+  --bg:          #0a0a0a;
+  --bg-1:        #111111;
+  --bg-2:        #1a1a1a;
+  --bg-3:        #222222;
+  --border:      #333333;
+  --border-2:    #444444;
+
+  /* Texto */
+  --t-hi:        #f5f5f5;   /* principal — alta visibilidade */
+  --t-mid:       #cccccc;   /* secundario */
+  --t-low:       #999999;   /* terciario — uso minimo */
+
+  /* Acentos */
+  --blue:        #4fc3f7;   /* azul claro */
+  --blue-dim:    rgba(79,195,247,0.12);
+  --blue-border: rgba(79,195,247,0.35);
+  --green:       #69f0ae;
+  --green-dim:   rgba(105,240,174,0.10);
+  --green-border:rgba(105,240,174,0.35);
+  --purple:      #ce93d8;
+  --purple-dim:  rgba(206,147,216,0.10);
+  --purple-border:rgba(206,147,216,0.35);
+  --yellow:      #ffd54f;
+  --yellow-dim:  rgba(255,213,79,0.10);
+  --yellow-border:rgba(255,213,79,0.30);
+  --red:         #ef9a9a;
+  --red-dim:     rgba(239,154,154,0.10);
+  --red-border:  rgba(239,154,154,0.35);
+  --orange:      #ffb74d;
+
+  --radius:      6px;
+  --font-ui:     'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono:   'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-ui);
+  background: var(--bg);
+  color: var(--t-hi);
+  line-height: 1.75;
+  font-size: 14px;
+}
+
+/* ============================================================
+   LAYOUT
+============================================================ */
+.wrap {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 0 28px 80px;
+}
+
+/* ============================================================
+   HEADER
+============================================================ */
+.header {
+  background: var(--bg-1);
+  border-bottom: 2px solid var(--blue);
+  padding: 44px 40px 36px;
+  margin: 0 -28px 44px;
+}
+.header-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin-bottom: 14px;
+}
+.header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  margin-bottom: 24px;
+  line-height: 1.3;
+}
+.header h1 em { font-style: normal; color: var(--blue); }
+.meta {
+  display: flex;
+  gap: 36px;
+  flex-wrap: wrap;
+}
+.meta-item .label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--t-low);
+  margin-bottom: 3px;
+}
+.meta-item .val {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--t-mid);
+}
+.meta-item .val.hi { color: var(--green); }
+
+/* ============================================================
+   TOC
+============================================================ */
+.toc {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--blue);
+  border-radius: var(--radius);
+  padding: 22px 26px;
+  margin-bottom: 44px;
+}
+.toc-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin-bottom: 14px;
+}
+.toc ol { padding-left: 18px; }
+.toc li { margin: 5px 0; }
+.toc a {
+  color: var(--t-mid);
+  text-decoration: none;
+  font-size: 13px;
+  transition: color .15s;
+}
+.toc a:hover { color: var(--blue); }
+.toc ol ol { margin-top: 4px; }
+.toc ol ol a { font-size: 12px; color: var(--t-low); }
+.toc ol ol a:hover { color: var(--blue); }
+
+/* ============================================================
+   SECTION HEADERS
+============================================================ */
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 52px 0 26px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.section-num {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: var(--blue);
+  color: #000;
+  font-size: 15px;
+  font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.section-head h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+.section-head h2 small {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--t-low);
+  margin-top: 2px;
+}
+
+h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--blue);
+  margin: 30px 0 12px;
+  padding-left: 10px;
+  border-left: 2px solid var(--blue);
+  letter-spacing: 0.02em;
+}
+
+h4 {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--t-mid);
+  text-transform: uppercase;
+  letter-spacing: 0.10em;
+  margin: 22px 0 10px;
+}
+
+p { margin: 10px 0; color: var(--t-hi); font-size: 13.5px; }
+
+/* ============================================================
+   CODE BLOCKS
+============================================================ */
+pre {
+  background: #050505;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  overflow-x: auto;
+  margin: 14px 0;
+  position: relative;
+}
+pre[data-lang]::after {
+  content: attr(data-lang);
+  position: absolute;
+  top: 8px; right: 12px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--t-low);
+  font-family: var(--font-ui);
+}
+code {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.85;
+  color: var(--t-hi);
+}
+p code, li code, td code {
+  background: var(--bg-3);
+  border: 1px solid var(--border-2);
+  border-radius: 3px;
+  padding: 1px 6px;
+  color: var(--blue);
+  font-size: 12px;
+  font-family: var(--font-mono);
+}
+
+/* Syntax tokens */
+.c  { color: #666; font-style: italic; }   /* comment */
+.kw { color: #c792ea; }                     /* keyword */
+.st { color: #c3e88d; }                     /* string */
+.fn { color: #82aaff; }                     /* function/cmd */
+.nu { color: #f78c6c; }                     /* number */
+.op { color: var(--blue); }                 /* operator */
+.se { color: var(--yellow); }               /* section/heredoc */
+
+/* ============================================================
+   TABLES
+============================================================ */
+.t-wrap { overflow-x: auto; margin: 14px 0; border-radius: var(--radius); border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; }
+th {
+  background: var(--bg-3);
+  color: var(--blue);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  padding: 11px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #1e1e1e;
+  font-size: 13px;
+  color: var(--t-hi);
+  vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: #131313; }
+
+/* ============================================================
+   CALLOUTS
+============================================================ */
+.callout {
+  display: flex;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: var(--radius);
+  margin: 14px 0;
+  font-size: 13px;
+  line-height: 1.65;
+}
+.callout-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.callout strong { display: block; margin-bottom: 4px; font-size: 13px; }
+.callout.warn  { background: var(--yellow-dim); border: 1px solid var(--yellow-border); border-left: 3px solid var(--yellow);  color: var(--t-hi); }
+.callout.warn  .callout-icon { color: var(--yellow); }
+.callout.info  { background: var(--blue-dim);   border: 1px solid var(--blue-border);   border-left: 3px solid var(--blue);    color: var(--t-hi); }
+.callout.info  .callout-icon { color: var(--blue); }
+.callout.ok    { background: var(--green-dim);  border: 1px solid var(--green-border);  border-left: 3px solid var(--green);   color: var(--t-hi); }
+.callout.ok    .callout-icon { color: var(--green); }
+
+/* ============================================================
+   DIAGRAMS
+============================================================ */
+.diagram {
+  background: #050505;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 20px;
+  margin: 18px 0;
+  overflow-x: auto;
+  text-align: center;
+}
+.diagram svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+
+/* ============================================================
+   SCENARIO CARDS
+============================================================ */
+.cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 18px 0;
+}
+.card {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+.card-letter {
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  width: 26px; height: 26px;
+  background: var(--bg-3);
+  border: 1px solid var(--border-2);
+  border-radius: 5px;
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  font-family: var(--font-mono);
+}
+.card h4 { margin-top: 0; color: var(--t-hi); text-transform: none; letter-spacing: 0; font-size: 13px; }
+.card p  { font-size: 12px; color: var(--t-low); margin: 6px 0 10px; }
+.card ol, .card ul { padding-left: 16px; font-size: 12.5px; color: var(--t-mid); }
+.card li { margin: 5px 0; line-height: 1.55; }
+
+/* ============================================================
+   TROUBLE ITEMS
+============================================================ */
+.trouble {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin: 14px 0;
+  overflow: hidden;
+}
+.trouble-title {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 18px;
+  background: var(--red-dim);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px; font-weight: 700;
+  color: var(--red);
+}
+.trouble-body { padding: 14px 18px; }
+
+/* ============================================================
+   EVENT BADGES
+============================================================ */
+.badge {
+  display: inline-block;
+  padding: 2px 8px; border-radius: 4px;
+  font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+}
+.b-blue   { background: var(--blue-dim);   color: var(--blue);   border: 1px solid var(--blue-border); }
+.b-green  { background: var(--green-dim);  color: var(--green);  border: 1px solid var(--green-border); }
+.b-red    { background: var(--red-dim);    color: var(--red);    border: 1px solid var(--red-border); }
+.b-orange { background: rgba(255,183,77,.10); color: var(--orange); border: 1px solid rgba(255,183,77,.3); }
+
+/* ============================================================
+   STEP LIST
+============================================================ */
+.steps { list-style: none; padding: 0; margin: 14px 0; }
+.steps li {
+  display: flex; gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid #1e1e1e;
+  align-items: flex-start;
+  font-size: 13px; color: var(--t-hi);
+}
+.steps li:last-child { border-bottom: none; }
+.step-n {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--bg-3); border: 1px solid var(--blue);
+  color: var(--blue);
+  font-size: 10px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 2px;
+  font-family: var(--font-mono);
+}
+
+/* ============================================================
+   QUICK REF
+============================================================ */
+.qr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 18px 0; }
+.qr-box  { background: #050505; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.qr-title {
+  padding: 9px 16px;
+  background: var(--bg-3);
+  font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.10em; text-transform: uppercase;
+  color: var(--blue);
+  border-bottom: 1px solid var(--border);
+}
+.qr-box pre { border: none; border-radius: 0; margin: 0; padding: 16px; }
+
+ul, ol { padding-left: 20px; margin: 10px 0; }
+li { margin: 5px 0; font-size: 13px; color: var(--t-hi); }
+
+hr { border: none; border-top: 1px solid var(--border); margin: 44px 0; }
+
+/* ============================================================
+   FOOTER
+============================================================ */
+.footer {
+  text-align: center; padding: 28px 0;
+  border-top: 1px solid var(--border);
+  margin-top: 56px;
+  font-size: 11px; color: var(--t-low);
+  letter-spacing: 0.05em;
+}
+
+/* ============================================================
+   PRINT
+============================================================ */
+@media print {
+  html, body { background: #fff !important; color: #111 !important; font-size: 11pt; }
+  .header { background: #0d0d0d !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  pre, .qr-box { background: #f5f5f5 !important; border-color: #ccc !important; }
+  pre code { color: #111 !important; }
+  .section-head { page-break-before: always; }
+  a { color: inherit; text-decoration: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ============================================================
+     HEADER
+============================================================ -->
+<header class="header">
+  <div class="header-eyebrow">Vigilant NDR &mdash; Documentacao Tecnica</div>
+  <h1>Roteiro de Testes<br><em>Vigilant Sensor Update System</em></h1>
+  <div class="meta">
+    <div class="meta-item">
+      <div class="label">Versao em Producao</div>
+      <div class="val hi">v2.0.3</div>
+    </div>
+    <div class="meta-item">
+      <div class="label">Repositorio</div>
+      <div class="val">Vigilant-devs/sensores-updates</div>
+    </div>
+    <div class="meta-item">
+      <div class="label">Servidor de Logs</div>
+      <div class="val">172.16.162.189 &mdash; Grafana</div>
+    </div>
+    <div class="meta-item">
+      <div class="label">Porta SSH</div>
+      <div class="val">12222</div>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     TOC
+============================================================ -->
+<nav class="toc">
+  <div class="toc-title">Indice</div>
+  <ol>
+    <li><a href="#overview">Visao Geral do Fluxo</a></li>
+    <li><a href="#p1">Parte 1 &mdash; Publicar uma Nova Versao (Desenvolvedor)</a>
+      <ol>
+        <li><a href="#p1-1">1.1 Estrutura de Pastas</a></li>
+        <li><a href="#p1-2">1.2 Como o post-install.sh funciona</a></li>
+        <li><a href="#p1-3">1.3 Adicionar ou modificar um arquivo</a></li>
+        <li><a href="#p1-4">1.4 Atualizar o CHANGELOG</a></li>
+        <li><a href="#p1-5">1.5 Fazer commit e publicar o tag</a></li>
+        <li><a href="#p1-6">1.6 Acompanhar o CI no GitHub</a></li>
+      </ol>
+    </li>
+    <li><a href="#p2">Parte 2 &mdash; Testar a Atualizacao no Sensor</a></li>
+    <li><a href="#p3">Parte 3 &mdash; Cenarios de Teste</a></li>
+    <li><a href="#p4">Parte 4 &mdash; Troubleshooting</a></li>
+    <li><a href="#qr">Referencia Rapida</a></li>
+  </ol>
+</nav>
+
+<!-- ============================================================
+     VISAO GERAL
+============================================================ -->
+<section id="overview">
+  <div class="section-head" style="margin-top:0">
+    <div class="section-num" style="background:var(--bg-3);color:var(--blue);border:1px solid var(--blue);">&#9670;</div>
+    <h2>Visao Geral do Fluxo<small>Pipeline: desenvolvedor &rarr; GitHub CI &rarr; sensor em campo</small></h2>
+  </div>
+
+  <div class="diagram">
+    <svg viewBox="0 0 880 560" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:880px;">
+      <defs>
+        <marker id="a1" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#4fc3f7"/></marker>
+        <marker id="a2" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#69f0ae"/></marker>
+        <marker id="a3" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#ce93d8"/></marker>
+        <marker id="a4" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#ffd54f"/></marker>
+      </defs>
+
+      <!-- Background -->
+      <rect width="880" height="560" fill="#050505" rx="6"/>
+
+      <!-- Lane columns -->
+      <!-- DEV -->
+      <rect x="12" y="12" width="252" height="536" fill="#0e0e0e" rx="5"/>
+      <rect x="12" y="12" width="252" height="38" fill="#1a1a1a" rx="5"/>
+      <rect x="12" y="40" width="252" height="10" fill="#1a1a1a"/>
+      <text x="138" y="36" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="12" font-weight="800" fill="#4fc3f7" letter-spacing="1.5">DESENVOLVEDOR</text>
+      <!-- lane divider -->
+      <line x1="264" y1="12" x2="264" y2="548" stroke="#2a2a2a" stroke-width="1"/>
+
+      <!-- GITHUB CI -->
+      <rect x="268" y="12" width="260" height="536" fill="#0a0a0a" rx="5"/>
+      <rect x="268" y="12" width="260" height="38" fill="#1a1a1a" rx="5"/>
+      <rect x="268" y="40" width="260" height="10" fill="#1a1a1a"/>
+      <text x="398" y="36" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="12" font-weight="800" fill="#ce93d8" letter-spacing="1.5">GITHUB  /  CI</text>
+      <line x1="528" y1="12" x2="528" y2="548" stroke="#2a2a2a" stroke-width="1"/>
+
+      <!-- SENSOR -->
+      <rect x="532" y="12" width="336" height="536" fill="#0e0e0e" rx="5"/>
+      <rect x="532" y="12" width="336" height="38" fill="#1a1a1a" rx="5"/>
+      <rect x="532" y="40" width="336" height="10" fill="#1a1a1a"/>
+      <text x="700" y="36" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="12" font-weight="800" fill="#69f0ae" letter-spacing="1.5">SENSOR  (CAMPO)</text>
+
+      <!-- ==================== DEV BOXES ==================== -->
+      <!-- BOX 1 -->
+      <rect x="26" y="72" width="224" height="46" rx="5" fill="#141414" stroke="#4fc3f7" stroke-width="1.2"/>
+      <text x="138" y="90" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="12" fill="#f5f5f5">1. Edita arquivo</text>
+      <text x="138" y="108" text-anchor="middle" font-family="Consolas,monospace" font-size="11" fill="#4fc3f7">sensor/scripts/</text>
+      <line x1="138" y1="118" x2="138" y2="138" stroke="#4fc3f7" stroke-width="1.5" marker-end="url(#a1)"/>
+
+      <!-- BOX 2 -->
+      <rect x="26" y="138" width="224" height="46" rx="5" fill="#141414" stroke="#4fc3f7" stroke-width="1.2"/>
+      <text x="138" y="156" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="12" fill="#f5f5f5">2. git add + git commit</text>
+      <text x="138" y="174" text-anchor="middle" font-family="Consolas,monospace" font-size="10" fill="#999">feat: descricao breve</text>
+      <line x1="138" y1="184" x2="138" y2="204" stroke="#4fc3f7" stroke-width="1.5" marker-end="url(#a1)"/>
+
+      <!-- BOX 3 -->
+      <rect x="26" y="204" width="224" height="46" rx="5" fill="#141414" stroke="#4fc3f7" stroke-width="1.2"/>
+      <text x="138" y="222" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="12" fill="#f5f5f5">3. git tag vX.Y.Z</text>
+      <text x="138" y="240" text-anchor="middle" font-family="Consolas,monospace" font-size="10" fill="#999">ex: git tag v2.0.4</text>
+      <line x1="138" y1="250" x2="138" y2="270" stroke="#4fc3f7" stroke-width="1.5" marker-end="url(#a1)"/>
+
+      <!-- BOX 4 push -->
+      <rect x="26" y="270" width="224" height="56" rx="5" fill="#141414" stroke="#4fc3f7" stroke-width="1.2"/>
+      <text x="138" y="288" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="12" fill="#f5f5f5">4. git push origin main</text>
+      <text x="138" y="306" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="12" fill="#f5f5f5">5. git push origin vX.Y.Z</text>
+      <text x="138" y="320" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="10" fill="#666">dispara CI automaticamente</text>
+
+      <!-- Arrow dev -> github -->
+      <line x1="250" y1="297" x2="267" y2="297" stroke="#4fc3f7" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#a1)"/>
+      <text x="253" y="289" font-family="'Segoe UI',sans-serif" font-size="10" fill="#4fc3f7">push</text>
+
+      <!-- ==================== CI BOXES ==================== -->
+      <!-- BOX CI 1 -->
+      <rect x="282" y="72" width="232" height="46" rx="5" fill="#141414" stroke="#ce93d8" stroke-width="1.2"/>
+      <text x="398" y="90" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="12" fill="#f5f5f5">Workflow disparado</text>
+      <text x="398" y="108" text-anchor="middle" font-family="Consolas,monospace" font-size="10" fill="#ce93d8">Build, Sign &amp; Publish Release</text>
+      <line x1="398" y1="118" x2="398" y2="138" stroke="#ce93d8" stroke-width="1.5" marker-end="url(#a3)"/>
+
+      <!-- BOX CI 2 -->
+      <rect x="282" y="138" width="232" height="46" rx="5" fill="#141414" stroke="#ce93d8" stroke-width="1.2"/>
+      <text x="398" y="157" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="12" fill="#f5f5f5">Empacota sensor-pack.tar.gz</text>
+      <text x="398" y="174" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="10" fill="#ccc">SHA256 + assina GPG</text>
+      <line x1="398" y1="184" x2="398" y2="204" stroke="#ce93d8" stroke-width="1.5" marker-end="url(#a3)"/>
+
+      <!-- BOX CI 3 -->
+      <rect x="282" y="204" width="232" height="46" rx="5" fill="#141414" stroke="#ce93d8" stroke-width="1.2"/>
+      <text x="398" y="223" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="12" fill="#f5f5f5">Cria GitHub Release</text>
+      <text x="398" y="240" text-anchor="middle" font-family="Consolas,monospace" font-size="10" fill="#999">releases/tag/vX.Y.Z</text>
+      <line x1="398" y1="250" x2="398" y2="270" stroke="#ce93d8" stroke-width="1.5" marker-end="url(#a3)"/>
+
+      <!-- BOX CI 4 manifest -->
+      <rect x="282" y="270" width="232" height="46" rx="5" fill="#141414" stroke="#ffd54f" stroke-width="1.5"/>
+      <text x="398" y="289" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="12" fill="#f5f5f5">Atualiza manifest.json</text>
+      <text x="398" y="307" text-anchor="middle" font-family="Consolas,monospace" font-size="10" fill="#ffd54f">"version": "vX.Y.Z"</text>
+
+      <!-- ==================== SENSOR BOXES ==================== -->
+      <!-- BOX S1 timer -->
+      <rect x="546" y="72" width="308" height="56" rx="5" fill="#141414" stroke="#69f0ae" stroke-width="1.2"/>
+      <text x="700" y="91" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="12" fill="#f5f5f5">Timer dispara updater</text>
+      <text x="700" y="109" text-anchor="middle" font-family="Consolas,monospace" font-size="11" fill="#69f0ae">vigilant-updater.timer</text>
+      <text x="700" y="122" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="10" fill="#999">Prod: domingo 03h &nbsp;|&nbsp; Teste: 5-10 min</text>
+      <line x1="700" y1="128" x2="700" y2="158" stroke="#69f0ae" stroke-width="1.5" marker-end="url(#a2)"/>
+
+      <!-- BOX S2 fetch manifest -->
+      <rect x="546" y="158" width="308" height="46" rx="5" fill="#141414" stroke="#69f0ae" stroke-width="1.2"/>
+      <text x="700" y="177" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="12" fill="#f5f5f5">Busca manifest.json no GitHub</text>
+      <text x="700" y="194" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="10" fill="#ccc">compara versao local com remota</text>
+      <line x1="700" y1="204" x2="700" y2="234" stroke="#69f0ae" stroke-width="1.5" marker-end="url(#a2)"/>
+
+      <!-- Crosslane arrow: CI manifest -> sensor fetch -->
+      <path d="M514 293 Q530 293 530 181 Q530 181 545 181" fill="none" stroke="#ffd54f" stroke-width="1.2" stroke-dasharray="5,3" marker-end="url(#a4)"/>
+      <text x="518" y="265" font-family="'Segoe UI',sans-serif" font-size="10" fill="#ffd54f">manifest</text>
+
+      <!-- BOX S3 download -->
+      <rect x="546" y="234" width="308" height="46" rx="5" fill="#141414" stroke="#69f0ae" stroke-width="1.2"/>
+      <text x="700" y="253" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="12" fill="#f5f5f5">Download sensor-pack.tar.gz</text>
+      <text x="700" y="270" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="10" fill="#ccc">verifica SHA256 + assinatura GPG</text>
+      <line x1="700" y1="280" x2="700" y2="310" stroke="#69f0ae" stroke-width="1.5" marker-end="url(#a2)"/>
+
+      <!-- BOX S4 post-install -->
+      <rect x="546" y="310" width="308" height="66" rx="5" fill="#0a1a10" stroke="#69f0ae" stroke-width="1.5"/>
+      <text x="700" y="330" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="12" fill="#69f0ae" font-weight="700">Executa post-install.sh</text>
+      <text x="700" y="348" text-anchor="middle" font-family="Consolas,monospace" font-size="10" fill="#ccc">scripts/ &rarr; /vigilant/scripts/</text>
+      <text x="700" y="364" text-anchor="middle" font-family="Consolas,monospace" font-size="10" fill="#ccc">configs/ &rarr; /etc/{snort,dionaea...}</text>
+      <text x="700" y="370" text-anchor="middle" font-family="Consolas,monospace" font-size="9" fill="#666">atualiza VERSION</text>
+      <line x1="700" y1="376" x2="700" y2="406" stroke="#69f0ae" stroke-width="1.5" marker-end="url(#a2)"/>
+
+      <!-- BOX S5 log -->
+      <rect x="546" y="406" width="308" height="46" rx="5" fill="#141414" stroke="#ffd54f" stroke-width="1.2"/>
+      <text x="700" y="425" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="12" fill="#f5f5f5">Envia log ao Grafana</text>
+      <text x="700" y="442" text-anchor="middle" font-family="Consolas,monospace" font-size="10" fill="#ffd54f">event: update_success</text>
+
+      <!-- CI no_update branch (sensor already updated) -->
+      <!-- optional: small note -->
+
+      <!-- ==================== LEGEND ==================== -->
+      <rect x="18" y="460" width="236" height="70" rx="4" fill="#111" stroke="#2a2a2a" stroke-width="1"/>
+      <text x="30" y="478" font-family="'Segoe UI',sans-serif" font-size="10" fill="#666" font-weight="700" letter-spacing="1">LEGENDA</text>
+      <line x1="30" y1="492" x2="64" y2="492" stroke="#4fc3f7" stroke-width="1.5"/>
+      <text x="70" y="496" font-family="'Segoe UI',sans-serif" font-size="11" fill="#ccc">Fluxo principal</text>
+      <line x1="30" y1="512" x2="64" y2="512" stroke="#ffd54f" stroke-width="1.2" stroke-dasharray="5,3"/>
+      <text x="70" y="516" font-family="'Segoe UI',sans-serif" font-size="11" fill="#ccc">Comunicacao remota</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ============================================================
+     PARTE 1
+============================================================ -->
+<section id="p1">
+  <div class="section-head">
+    <div class="section-num">1</div>
+    <h2>Publicar uma Nova Versao<small>Procedimento para o desenvolvedor</small></h2>
+  </div>
+
+  <h3 id="p1-1">1.1 Estrutura de Pastas do Repositorio</h3>
+
+  <div class="diagram" style="text-align:left;">
+    <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px;">
+      <rect width="720" height="300" fill="#050505"/>
+
+      <!-- Root -->
+      <rect x="10" y="14" width="174" height="32" rx="5" fill="#111" stroke="#4fc3f7" stroke-width="1.5"/>
+      <text x="97" y="35" text-anchor="middle" font-family="Consolas,monospace" font-size="13" fill="#4fc3f7" font-weight="700">sensores-updates/</text>
+
+      <!-- Vertical line from root -->
+      <line x1="97" y1="46" x2="97" y2="260" stroke="#333" stroke-width="1.5"/>
+
+      <!-- sensor/ -->
+      <line x1="97" y1="80" x2="200" y2="80" stroke="#333" stroke-width="1.5"/>
+      <rect x="200" y="66" width="88" height="28" rx="4" fill="#111" stroke="#444" stroke-width="1"/>
+      <text x="244" y="85" text-anchor="middle" font-family="Consolas,monospace" font-size="12" fill="#f5f5f5">sensor/</text>
+
+      <!-- sensor children vertical -->
+      <line x1="244" y1="94" x2="244" y2="210" stroke="#2a2a2a" stroke-width="1"/>
+
+      <!-- scripts/ -->
+      <line x1="244" y1="113" x2="310" y2="113" stroke="#2a2a2a" stroke-width="1"/>
+      <rect x="310" y="100" width="86" height="26" rx="4" fill="#0a1520" stroke="#4fc3f7" stroke-width="1"/>
+      <text x="353" y="117" text-anchor="middle" font-family="Consolas,monospace" font-size="11" fill="#4fc3f7">scripts/</text>
+      <text x="406" y="117" font-family="'Segoe UI',sans-serif" font-size="11" fill="#ccc">&rarr; /vigilant/scripts/</text>
+
+      <!-- configs/ -->
+      <line x1="244" y1="148" x2="310" y2="148" stroke="#2a2a2a" stroke-width="1"/>
+      <rect x="310" y="135" width="86" height="26" rx="4" fill="#111" stroke="#444" stroke-width="1"/>
+      <text x="353" y="152" text-anchor="middle" font-family="Consolas,monospace" font-size="11" fill="#f5f5f5">configs/</text>
+
+      <!-- configs children -->
+      <line x1="353" y1="161" x2="353" y2="230" stroke="#222" stroke-width="1"/>
+      <line x1="353" y1="172" x2="404" y2="172" stroke="#222" stroke-width="1"/>
+      <text x="410" y="176" font-family="Consolas,monospace" font-size="10" fill="#ccc">snort/</text>
+      <text x="455" y="176" font-family="'Segoe UI',sans-serif" font-size="10" fill="#555">&rarr; /etc/snort/</text>
+      <line x1="353" y1="188" x2="404" y2="188" stroke="#222" stroke-width="1"/>
+      <text x="410" y="192" font-family="Consolas,monospace" font-size="10" fill="#ccc">dionaea/</text>
+      <text x="465" y="192" font-family="'Segoe UI',sans-serif" font-size="10" fill="#555">&rarr; /etc/dionaea/</text>
+      <line x1="353" y1="204" x2="404" y2="204" stroke="#222" stroke-width="1"/>
+      <text x="410" y="208" font-family="Consolas,monospace" font-size="10" fill="#ccc">cowrie/</text>
+      <text x="457" y="208" font-family="'Segoe UI',sans-serif" font-size="10" fill="#555">&rarr; /home/cowrie/.../etc/</text>
+      <line x1="353" y1="220" x2="404" y2="220" stroke="#222" stroke-width="1"/>
+      <text x="410" y="224" font-family="Consolas,monospace" font-size="10" fill="#ccc">bettercap/ exabgp/</text>
+      <text x="504" y="224" font-family="'Segoe UI',sans-serif" font-size="10" fill="#555">&rarr; /etc/...</text>
+
+      <!-- post-install.sh -->
+      <line x1="244" y1="185" x2="310" y2="185" stroke="#2a2a2a" stroke-width="1"/>
+      <rect x="310" y="172" width="122" height="26" rx="4" fill="#111" stroke="#ffd54f" stroke-width="1"/>
+      <text x="371" y="189" text-anchor="middle" font-family="Consolas,monospace" font-size="11" fill="#ffd54f">post-install.sh</text>
+
+      <!-- updater/ -->
+      <line x1="97" y1="122" x2="200" y2="122" stroke="#333" stroke-width="1.5"/>
+      <rect x="200" y="108" width="90" height="28" rx="4" fill="#111" stroke="#444" stroke-width="1"/>
+      <text x="245" y="127" text-anchor="middle" font-family="Consolas,monospace" font-size="12" fill="#f5f5f5">updater/</text>
+
+      <!-- manifest.json -->
+      <line x1="97" y1="168" x2="200" y2="168" stroke="#333" stroke-width="1.5"/>
+      <rect x="200" y="154" width="118" height="28" rx="4" fill="#0a1a10" stroke="#69f0ae" stroke-width="1"/>
+      <text x="259" y="172" text-anchor="middle" font-family="Consolas,monospace" font-size="11" fill="#69f0ae">manifest.json</text>
+      <text x="328" y="172" font-family="'Segoe UI',sans-serif" font-size="10" fill="#555">auto (CI)</text>
+
+      <!-- tools/ -->
+      <line x1="97" y1="216" x2="200" y2="216" stroke="#333" stroke-width="1.5"/>
+      <rect x="200" y="202" width="76" height="28" rx="4" fill="#111" stroke="#444" stroke-width="1"/>
+      <text x="238" y="221" text-anchor="middle" font-family="Consolas,monospace" font-size="12" fill="#f5f5f5">tools/</text>
+
+      <!-- CHANGELOG.md -->
+      <line x1="97" y1="256" x2="200" y2="256" stroke="#333" stroke-width="1.5"/>
+      <rect x="200" y="242" width="116" height="28" rx="4" fill="#111" stroke="#444" stroke-width="1"/>
+      <text x="258" y="261" text-anchor="middle" font-family="Consolas,monospace" font-size="11" fill="#ccc">CHANGELOG.md</text>
+    </svg>
+  </div>
+
+  <h3 id="p1-2">1.2 Como o post-install.sh Funciona</h3>
+
+  <p>O <code>post-install.sh</code> copia os arquivos do pacote para os destinos corretos no sensor. E chamado automaticamente pelo <code>vigilant-updater.sh</code> apos download e verificacao — nunca precisa ser executado manualmente.</p>
+
+  <!-- Updater flow -->
+  <div class="diagram">
+    <svg viewBox="0 0 580 530" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:580px;">
+      <defs>
+        <marker id="bu" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#4fc3f7"/></marker>
+        <marker id="gu" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#69f0ae"/></marker>
+        <marker id="ru" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#ef9a9a"/></marker>
+      </defs>
+      <rect width="580" height="530" fill="#050505" rx="6"/>
+
+      <!-- Main box: vigilant-updater.sh -->
+      <rect x="160" y="18" width="260" height="40" rx="7" fill="#0a1520" stroke="#4fc3f7" stroke-width="2"/>
+      <text x="290" y="43" text-anchor="middle" font-family="Consolas,monospace" font-size="14" font-weight="700" fill="#4fc3f7">vigilant-updater.sh</text>
+
+      <!-- Step 1 -->
+      <line x1="290" y1="58" x2="290" y2="80" stroke="#4fc3f7" stroke-width="1.5" marker-end="url(#bu)"/>
+      <rect x="140" y="80" width="300" height="42" rx="5" fill="#141414" stroke="#333" stroke-width="1"/>
+      <text x="290" y="97" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="13" fill="#f5f5f5">1. Consulta manifest.json</text>
+      <text x="290" y="114" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="11" fill="#999">ha nova versao disponivel?</text>
+
+      <!-- Decision diamond: nova versao? -->
+      <line x1="290" y1="122" x2="290" y2="148" stroke="#4fc3f7" stroke-width="1.5" marker-end="url(#bu)"/>
+      <polygon points="290,148 350,180 290,212 230,180" fill="#0f0f0f" stroke="#ffd54f" stroke-width="1.5"/>
+      <text x="290" y="176" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="12" font-weight="700" fill="#ffd54f">Nova</text>
+      <text x="290" y="193" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="12" font-weight="700" fill="#ffd54f">versao?</text>
+
+      <!-- NO branch -->
+      <line x1="230" y1="180" x2="100" y2="180" stroke="#ef9a9a" stroke-width="1.5" marker-end="url(#ru)"/>
+      <rect x="14" y="163" width="86" height="34" rx="5" fill="#1a0a0a" stroke="#ef9a9a" stroke-width="1"/>
+      <text x="57" y="178" text-anchor="middle" font-family="Consolas,monospace" font-size="11" fill="#ef9a9a">no_update</text>
+      <text x="57" y="192" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="10" fill="#666">encerra</text>
+      <text x="165" y="170" font-family="'Segoe UI',sans-serif" font-size="11" fill="#ef9a9a">Nao</text>
+
+      <!-- YES branch -->
+      <line x1="290" y1="212" x2="290" y2="240" stroke="#69f0ae" stroke-width="1.5" marker-end="url(#gu)"/>
+      <text x="300" y="230" font-family="'Segoe UI',sans-serif" font-size="11" fill="#69f0ae">Sim</text>
+
+      <!-- Step 2 download -->
+      <rect x="140" y="240" width="300" height="42" rx="5" fill="#141414" stroke="#333" stroke-width="1"/>
+      <text x="290" y="257" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="13" fill="#f5f5f5">2. Download sensor-pack.tar.gz</text>
+      <text x="290" y="274" text-anchor="middle" font-family="Consolas,monospace" font-size="10" fill="#999">GitHub Releases</text>
+      <line x1="290" y1="282" x2="290" y2="305" stroke="#4fc3f7" stroke-width="1.5" marker-end="url(#bu)"/>
+
+      <!-- Step 3 verify -->
+      <rect x="140" y="305" width="300" height="42" rx="5" fill="#141414" stroke="#333" stroke-width="1"/>
+      <text x="290" y="322" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="13" fill="#f5f5f5">3. Verifica SHA256 + GPG</text>
+      <line x1="290" y1="347" x2="290" y2="373" stroke="#4fc3f7" stroke-width="1.5" marker-end="url(#bu)"/>
+
+      <!-- Decision diamond: valido? -->
+      <polygon points="290,373 345,400 290,427 235,400" fill="#0f0f0f" stroke="#ffd54f" stroke-width="1.5"/>
+      <text x="290" y="396" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="12" font-weight="700" fill="#ffd54f">Valido?</text>
+      <text x="290" y="412" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="10" fill="#ffd54f">SHA256 / GPG</text>
+
+      <!-- NO branch verify -->
+      <line x1="235" y1="400" x2="100" y2="400" stroke="#ef9a9a" stroke-width="1.5" marker-end="url(#ru)"/>
+      <rect x="8" y="383" width="92" height="34" rx="5" fill="#1a0a0a" stroke="#ef9a9a" stroke-width="1"/>
+      <text x="54" y="397" text-anchor="middle" font-family="Consolas,monospace" font-size="11" fill="#ef9a9a">verify_</text>
+      <text x="54" y="410" text-anchor="middle" font-family="Consolas,monospace" font-size="11" fill="#ef9a9a">failed</text>
+      <text x="170" y="390" font-family="'Segoe UI',sans-serif" font-size="11" fill="#ef9a9a">Nao</text>
+
+      <!-- YES branch -->
+      <line x1="290" y1="427" x2="290" y2="455" stroke="#69f0ae" stroke-width="1.5" marker-end="url(#gu)"/>
+      <text x="300" y="445" font-family="'Segoe UI',sans-serif" font-size="11" fill="#69f0ae">Sim</text>
+
+      <!-- Step 4 + 5 final box -->
+      <rect x="100" y="455" width="380" height="60" rx="6" fill="#051a10" stroke="#69f0ae" stroke-width="1.5"/>
+      <text x="290" y="474" text-anchor="middle" font-family="'Segoe UI',sans-serif" font-size="13" fill="#69f0ae" font-weight="700">4. Extrai  +  5. post-install.sh</text>
+      <text x="180" y="492" font-family="Consolas,monospace" font-size="10" fill="#ccc">scripts/</text>
+      <text x="232" y="492" font-family="'Segoe UI',sans-serif" font-size="10" fill="#555">&rarr;</text>
+      <text x="244" y="492" font-family="Consolas,monospace" font-size="10" fill="#ccc">/vigilant/scripts/</text>
+      <text x="180" y="508" font-family="Consolas,monospace" font-size="10" fill="#ccc">configs/ &rarr; /etc/{snort, dionaea, cowrie...}</text>
+    </svg>
+  </div>
+
+  <h4>O que colocar em cada lugar</h4>
+  <div class="t-wrap">
+    <table>
+      <thead>
+        <tr><th>O que voce quer fazer</th><th>Onde colocar no repositorio</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Adicionar/atualizar script de operacao</td><td><code>sensor/scripts/</code></td></tr>
+        <tr><td>Atualizar regras do Snort</td><td><code>sensor/configs/snort/rules/</code></td></tr>
+        <tr><td>Atualizar config do Cowrie</td><td><code>sensor/configs/cowrie/</code></td></tr>
+        <tr><td>Remover arquivo obsoleto do sensor</td><td><code>sensor/removals.txt</code> (caminho absoluto por linha)</td></tr>
+        <tr><td>Executar comandos especificos nesta versao</td><td><code>sensor/custom-deploy.sh</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <div class="callout-icon">&#9888;</div>
+    <div class="callout-body">
+      <strong>Sobrescrita sem confirmacao</strong>
+      O <code>post-install.sh</code> sobrescreve arquivos existentes sem pedir confirmacao. Se um subdiretorio de <code>configs/</code> estiver vazio no pacote, ele e ignorado — nao apaga nada no sensor.
+    </div>
+  </div>
+
+  <h3 id="p1-3">1.3 Adicionar ou Modificar um Arquivo</h3>
+  <p>Exemplo: adicionar <code>meu-script.sh</code> no sensor.</p>
+
+<pre data-lang="bash"><code><span class="c"># Na raiz do repositorio</span>
+cd /caminho/para/sensores-updates
+
+<span class="c"># Copie ou crie o script na pasta correta</span>
+cp /origem/meu-script.sh sensor/scripts/meu-script.sh
+
+<span class="c"># Verifique o que mudou</span>
+git status
+git diff --stat</code></pre>
+
+  <div class="callout info">
+    <div class="callout-icon">&#9432;</div>
+    <div class="callout-body">
+      <strong>Regra de mapeamento</strong>
+      Tudo dentro de <code>sensor/scripts/</code> vai parar em <code>/vigilant/scripts/</code> no sensor.
+      Se for config de servico, use <code>sensor/configs/&lt;servico&gt;/</code>.
+    </div>
+  </div>
+
+  <h3 id="p1-4">1.4 Atualizar o CHANGELOG</h3>
+  <p>Edite <code>sensor/CHANGELOG.md</code> <strong>antes</strong> de publicar o tag:</p>
+<pre data-lang="markdown"><code>## vX.Y.Z (YYYY-MM-DD)
+- Adicionado meu-script.sh para [descricao]</code></pre>
+
+  <h3 id="p1-5">1.5 Fazer Commit e Publicar o Tag</h3>
+<pre data-lang="bash"><code><span class="c"># Adicionar os arquivos modificados</span>
+git add sensor/scripts/meu-script.sh sensor/CHANGELOG.md
+
+<span class="c"># Commit</span>
+git commit -m "feat: adicionar meu-script.sh — descricao breve"
+
+<span class="c"># Tag — escolha o numero correto:</span>
+<span class="c"># Patch (bug/adicao pequena):  v2.0.3 → v2.0.4</span>
+<span class="c"># Minor (nova funcionalidade): v2.0.3 → v2.1.0</span>
+<span class="c"># Major (breaking change):     v2.0.3 → v3.0.0</span>
+git tag v2.0.4
+
+<span class="c"># Push do commit e do tag (dispara CI automaticamente)</span>
+git push origin main
+git push origin v2.0.4</code></pre>
+
+  <h3 id="p1-6">1.6 Acompanhar o CI no GitHub</h3>
+  <ul class="steps">
+    <li><span class="step-n">1</span><span>Acesse <code>github.com/Vigilant-devs/sensores-updates/actions</code></span></li>
+    <li><span class="step-n">2</span><span>Aguarde o workflow <strong>Build, Sign &amp; Publish Release</strong> — leva ~1-2 minutos</span></li>
+    <li><span class="step-n">3</span><span>Check verde: nova Release criada e <code>manifest.json</code> atualizado para a nova versao</span></li>
+  </ul>
+
+  <div class="callout warn">
+    <div class="callout-icon">&#9888;</div>
+    <div class="callout-body">
+      <strong>Nunca edite o manifest.json manualmente</strong>
+      Ele e atualizado exclusivamente pelo CI. Edicoes manuais serao sobrescritas e podem quebrar o fluxo.
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     PARTE 2
+============================================================ -->
+<section id="p2">
+  <div class="section-head">
+    <div class="section-num">2</div>
+    <h2>Testar a Atualizacao no Sensor<small>Procedimento para o testador</small></h2>
+  </div>
+
+  <div class="callout info">
+    <div class="callout-icon">&#9432;</div>
+    <div class="callout-body">
+      <strong>Pre-requisitos</strong>
+      Acesso SSH na porta <code>12222</code>, updater instalado e rodando, servidor de logs acessivel em <code>172.16.162.189</code>.
+    </div>
+  </div>
+
+  <h4>Sensores Disponiveis</h4>
+  <div class="t-wrap">
+    <table>
+      <thead>
+        <tr><th>Sensor</th><th>IP</th><th>sensor_id</th><th>client_id</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>sensor-1</strong></td><td><code>172.16.162.197</code></td><td><code>sensor-1</code></td><td><code>20004</code></td></tr>
+        <tr><td><strong>sensor-2</strong></td><td><code>172.16.162.202</code></td><td><code>sensor-2</code></td><td><code>20004</code></td></tr>
+        <tr><td><strong>sensor-3</strong></td><td><code>172.16.162.198</code></td><td><code>sensor-3</code></td><td><code>20004</code></td></tr>
+        <tr><td><strong>sensor-04</strong></td><td><code>172.16.162.136</code></td><td><code>sensor-04</code></td><td><code>20004</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>2.1 Verificar Estado Atual do Sensor</h3>
+<pre data-lang="bash"><code>ssh -p 12222 root@172.16.162.197
+
+<span class="c"># Versao instalada</span>
+cat /vigilant/scripts/vigilantsensor/updater/VERSION
+
+<span class="c"># Identidade do sensor</span>
+cat /vigilant/scripts/sensor_id
+cat /vigilant/scripts/vigilant_client_id
+
+<span class="c"># Status do servico</span>
+systemctl status vigilant-updater.service
+
+<span class="c"># Ultimo log</span>
+tail -30 /vigilant/scripts/vigilantsensor/logs/vigilant-update.log</code></pre>
+
+  <h3>2.2 Disparar a Atualizacao Manualmente</h3>
+<pre data-lang="bash"><code><span class="c"># Forcar execucao imediata</span>
+systemctl start vigilant-updater.service
+
+<span class="c"># Acompanhar em tempo real</span>
+journalctl -u vigilant-updater.service -f</code></pre>
+
+  <h3>2.3 Verificar se a Atualizacao Foi Aplicada</h3>
+<pre data-lang="bash"><code><span class="c"># Versao deve estar atualizada (ex: 2.0.4)</span>
+cat /vigilant/scripts/vigilantsensor/updater/VERSION
+
+<span class="c"># Verificar se o novo script chegou</span>
+ls -la /vigilant/scripts/meu-script.sh
+
+<span class="c"># Log completo do evento</span>
+tail -50 /vigilant/scripts/vigilantsensor/logs/vigilant-update.log</code></pre>
+
+  <h4>Formato do Log (JSON)</h4>
+<pre data-lang="json"><code>{
+  "timestamp": "...",
+  "sensor":    "sensor-1",
+  "client":    "20004",
+  "event":     "update_success",
+  "version_from": "2.0.3",
+  "version_to":   "2.0.4",
+  "details":   "..."
+}</code></pre>
+
+  <h4>Eventos Possiveis</h4>
+  <div class="t-wrap">
+    <table>
+      <thead><tr><th>Evento</th><th>Significado</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge b-blue">no_update</span></td><td>Sensor ja esta na versao mais recente — nenhuma acao</td></tr>
+        <tr><td><span class="badge b-green">update_success</span></td><td>Atualizacao aplicada com sucesso</td></tr>
+        <tr><td><span class="badge b-orange">rollback</span></td><td>Falha detectada — versao anterior restaurada automaticamente</td></tr>
+        <tr><td><span class="badge b-red">verify_failed</span></td><td>Checksum ou assinatura GPG invalida — pacote rejeitado</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>2.4 Confirmar no Grafana</h3>
+  <p>Acesse <code>https://172.16.162.189</code> &mdash; login <code>admin</code> / (senha da instalacao)</p>
+  <p>Painel <strong>Vigilant Sensor Updates</strong>:</p>
+  <ul>
+    <li><strong>Total de Updates</strong> — deve incrementar +1</li>
+    <li><strong>Log de Eventos</strong> — evento <code>update_success</code> com <code>version_to: 2.0.4</code></li>
+    <li><strong>Versao Atual por Sensor</strong> — coluna "Versao" deve mostrar <code>2.0.4</code></li>
+  </ul>
+</section>
+
+<!-- ============================================================
+     PARTE 3
+============================================================ -->
+<section id="p3">
+  <div class="section-head">
+    <div class="section-num">3</div>
+    <h2>Cenarios de Teste<small>Casos de uso e verificacoes esperadas</small></h2>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-letter">A</div>
+      <h4>Script Novo Adicionado</h4>
+      <p>Verificar que novo script chega ao sensor com permissao correta.</p>
+      <ol>
+        <li>Adicione <code>sensor/scripts/teste-novo.sh</code> com <code>echo "ok"</code></li>
+        <li>Publique a versao (Parte 1)</li>
+        <li>Dispare o updater (Parte 2)</li>
+        <li>Verifique: <code>ls -la /vigilant/scripts/teste-novo.sh</code> — deve ter <code>+x</code></li>
+      </ol>
+    </div>
+    <div class="card">
+      <div class="card-letter">B</div>
+      <h4>Script Existente Modificado</h4>
+      <p>Verificar que modificacao sobrescreve o arquivo no sensor.</p>
+      <ol>
+        <li>Edite um script em <code>sensor/scripts/</code></li>
+        <li>Publique nova versao</li>
+        <li>Anote conteudo atual: <code>head -5 /vigilant/scripts/firewall.sh</code></li>
+        <li>Dispare o updater</li>
+        <li>Confirme que o arquivo foi atualizado</li>
+      </ol>
+    </div>
+    <div class="card">
+      <div class="card-letter">C</div>
+      <h4>Sensor Ja Atualizado</h4>
+      <p>Verificar que o updater nao faz nada desnecessario.</p>
+      <ol>
+        <li>Sensor ja na versao mais recente — dispare o updater</li>
+        <li>Log deve mostrar <code>no_update</code></li>
+        <li>Versao nao muda</li>
+      </ol>
+    </div>
+    <div class="card">
+      <div class="card-letter">D</div>
+      <h4>Atualizacao Agendada (Timer)</h4>
+      <p>Verificar que o timer automatico esta funcionando.</p>
+      <ol>
+        <li><code>systemctl status vigilant-updater.timer</code></li>
+        <li>Se <code>inactive</code>: <code>systemctl enable --now vigilant-updater.timer</code></li>
+        <li>Para testes rapidos ative <code>vigilant-updater-test.timer</code></li>
+        <li>Confirme: <code>systemctl list-timers | grep vigilant</code></li>
+      </ol>
+    </div>
+  </div>
+
+  <h3>Configurar Timer de Laboratorio Diretamente no Sensor</h3>
+<pre data-lang="bash"><code>ssh -p 12222 root@172.16.162.197
+
+<span class="c"># Criar timer de teste (10 minutos)</span>
+cat > /etc/systemd/system/vigilant-updater-test.timer << <span class="se">'EOF'</span>
+[Unit]
+Description=Vigilant Sensor Updater - Test Mode (every 10 minutes)
+
+[Timer]
+Unit=vigilant-updater.service
+OnBootSec=1min
+OnUnitActiveSec=10min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+<span class="se">EOF</span>
+
+<span class="c"># Recarregar e ativar o timer de teste</span>
+systemctl daemon-reload
+systemctl disable vigilant-updater.timer
+systemctl enable  --now vigilant-updater-test.timer
+
+<span class="c"># Confirmar agendamento</span>
+systemctl list-timers | grep vigilant</code></pre>
+
+  <p>Saida esperada:</p>
+<pre data-lang="terminal"><code>NEXT                         LEFT      LAST                         PASSED
+Thu 2026-03-05 XX:XX:00 BRT  9min 47s  Thu 2026-03-05 XX:XX:00 BRT  13s ago
+vigilant-updater-test.timer</code></pre>
+
+  <div class="callout ok">
+    <div class="callout-icon">&#10003;</div>
+    <div class="callout-body">
+      <strong>Restaurar timer de producao apos testes</strong>
+      <code>systemctl disable --now vigilant-updater-test.timer</code><br>
+      <code>systemctl enable  --now vigilant-updater.timer</code>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     PARTE 4
+============================================================ -->
+<section id="p4">
+  <div class="section-head">
+    <div class="section-num">4</div>
+    <h2>Troubleshooting<small>Diagnostico e resolucao de problemas comuns</small></h2>
+  </div>
+
+  <div class="trouble">
+    <div class="trouble-title">&#9888;&nbsp; Updater nao executa</div>
+    <div class="trouble-body">
+<pre data-lang="bash"><code><span class="c"># Ver erro do servico</span>
+systemctl status vigilant-updater.service
+journalctl -u vigilant-updater.service --no-pager -n 50
+
+<span class="c"># Verificar conectividade com GitHub</span>
+curl -s https://raw.githubusercontent.com/Vigilant-devs/sensores-updates/main/manifest.json | jq .</code></pre>
+    </div>
+  </div>
+
+  <div class="trouble">
+    <div class="trouble-title">&#9888;&nbsp; no_update quando deveria atualizar</div>
+    <div class="trouble-body">
+<pre data-lang="bash"><code><span class="c"># Versao local</span>
+cat /vigilant/scripts/vigilantsensor/updater/VERSION
+
+<span class="c"># Versao no manifest (o que o sensor ve)</span>
+curl -s https://raw.githubusercontent.com/Vigilant-devs/sensores-updates/main/manifest.json | jq .version
+
+<span class="c"># Se iguais: CI ainda nao terminou — aguarde e tente novamente</span>
+<span class="c"># Se diferentes: inspecionar log completo para ver o motivo</span></code></pre>
+    </div>
+  </div>
+
+  <div class="trouble">
+    <div class="trouble-title">&#9888;&nbsp; Evento verify_failed</div>
+    <div class="trouble-body">
+      <p style="margin-bottom:10px;">O pacote foi baixado mas SHA256 ou assinatura GPG nao batem. Causas possiveis:</p>
+      <ul style="margin-bottom:12px;">
+        <li>CI falhou no step de assinatura — verificar no GitHub Actions</li>
+        <li>Chave publica no sensor esta desatualizada</li>
+      </ul>
+<pre data-lang="bash"><code><span class="c"># Ver chave publica no sensor</span>
+ls -la /vigilant/scripts/vigilantsensor/updater/vigilant.pub.gpg</code></pre>
+    </div>
+  </div>
+
+  <div class="trouble">
+    <div class="trouble-title">&#9888;&nbsp; Logs nao aparecem no Grafana</div>
+    <div class="trouble-body">
+<pre data-lang="bash"><code><span class="c"># No sensor: verificar se rsyslog esta encaminhando</span>
+systemctl status rsyslog
+cat /etc/rsyslog.d/50-vigilant-updater.conf
+
+<span class="c"># No servidor de logs: verificar recebimento</span>
+tail -20 /var/log/vigilant/sensor-updates.log
+systemctl status promtail</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     QUICK REFERENCE
+============================================================ -->
+<section id="qr">
+  <div class="section-head">
+    <div class="section-num" style="background:var(--yellow);color:#000;">&#9889;</div>
+    <h2>Referencia Rapida<small>Comandos mais usados no dia a dia</small></h2>
+  </div>
+
+  <div class="qr-grid">
+    <div class="qr-box">
+      <div class="qr-title">No sensor (SSH)</div>
+<pre><code><span class="c"># Ver versao atual</span>
+cat /vigilant/scripts/vigilantsensor/updater/VERSION
+
+<span class="c"># Forcar atualizacao agora</span>
+systemctl start vigilant-updater.service
+
+<span class="c"># Log em tempo real (journal)</span>
+journalctl -u vigilant-updater.service -f
+
+<span class="c"># Log de eventos do updater</span>
+tail -f /vigilant/scripts/vigilantsensor/logs/vigilant-update.log</code></pre>
+    </div>
+    <div class="qr-box">
+      <div class="qr-title">Na maquina do desenvolvedor</div>
+<pre><code><span class="c"># Publicar nova versao</span>
+git tag vX.Y.Z
+git push origin main
+git push origin vX.Y.Z
+
+<span class="c"># Verificar manifest apos CI</span>
+curl -s https://raw.githubusercontent.com/\
+  Vigilant-devs/sensores-updates/main/\
+  manifest.json | python3 -m json.tool
+
+<span class="c"># GitHub: releases e actions</span>
+<span class="c"># github.com/Vigilant-devs/sensores-updates/releases</span></code></pre>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div>Vigilant NDR &mdash; Sensor Update System &mdash; v2.0.3</div>
+  <div style="margin-top:5px;">Documento interno &mdash; uso restrito</div>
+</footer>
+
+</div><!-- /wrap -->
+</body>
+</html>
